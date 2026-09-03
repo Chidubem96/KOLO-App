@@ -93,16 +93,16 @@ export function Auth() {
         ) : (
           <>
             <p className="hint" style={{ marginBottom: 12 }}>
-              Enter the 6-digit code sent to <b>{email}</b>.
+              Enter the code sent to <b>{email}</b>.
             </p>
             <div className="field">
               <input
                 className="codebox"
                 inputMode="numeric"
-                maxLength={6}
+                maxLength={10}
                 value={code}
                 onChange={(e) =>
-                  setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  setCode(e.target.value.replace(/\D/g, "").slice(0, 10))
                 }
                 onKeyDown={(e) => e.key === "Enter" && verify()}
               />
