@@ -13,6 +13,11 @@ export interface Profile {
   lang: string;
   dismissedSigs: string[];
   onboarded: boolean;
+  reliabilityScore: number;
+  bvnVerified: boolean;
+  ninVerified: boolean;
+  phoneVerified: boolean;
+  payoutAccount: string | null;
 }
 
 export interface Account {
@@ -73,6 +78,87 @@ export interface Circle {
   graceDays: number;
   lateFee: number;
   createdBy: string | null;
+  discoverable: boolean;
+  category: string;
+  reliabilityFloor: number;
+  payoutOrder: string;
+  floatEnabled: boolean;
+  guaranteeFund: number;
+  organiserStake: number;
+  maxSize: number;
+  blurb: string;
+  orgLabel: string;
+}
+
+export interface JoinRequest {
+  id: string;
+  circleId: string;
+  userId: string;
+  name: string;
+  score: number;
+  message: string;
+  status: "pending" | "approved" | "declined";
+  createdAt: string;
+}
+
+export interface Dispute {
+  id: string;
+  circleId: string;
+  raisedBy: string;
+  raisedByName: string;
+  subject: string;
+  reason: string;
+  note: string;
+  status: "open" | "resolved";
+  createdAt: string;
+}
+
+export interface FloatVote {
+  id: string;
+  circleId: string;
+  userId: string;
+  cycle: number;
+  vote: "in" | "out";
+}
+
+export interface Investment {
+  id: string;
+  product: string;
+  kind: "naira" | "dollar";
+  amount: number;
+  createdAt: string;
+}
+
+export interface DirectoryEntry {
+  userId: string;
+  name: string;
+  reliabilityScore: number;
+  cyclesCompleted: number;
+  bvnVerified: boolean;
+  ninVerified: boolean;
+  phoneVerified: boolean;
+}
+
+export interface DiscoverCircle {
+  id: string;
+  code: string;
+  name: string;
+  orgLabel: string;
+  category: string;
+  blurb: string;
+  amount: number;
+  cadence: string;
+  type: string;
+  maxSize: number;
+  memberCount: number;
+  reliabilityFloor: number;
+  guaranteeFund: number;
+  organiserStake: number;
+  completion: number;
+  cyclesDone: number;
+  myScore: number;
+  pending: boolean;
+  seed?: boolean;
 }
 
 export interface CircleMember {
@@ -98,6 +184,9 @@ export interface CircleContribution {
 export interface CircleFull extends Circle {
   members: CircleMember[];
   contributions: CircleContribution[];
+  disputes: Dispute[];
+  joinRequests: JoinRequest[];
+  floatVotes: FloatVote[];
 }
 
 export interface KoloData {
@@ -107,6 +196,9 @@ export interface KoloData {
   obligations: Obligation[];
   goals: Goal[];
   circles: CircleFull[];
+  investments: Investment[];
+  directory: Record<string, DirectoryEntry>;
+  myRequests: JoinRequest[];
   userId: string;
 }
 

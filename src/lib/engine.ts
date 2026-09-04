@@ -650,3 +650,217 @@ export function pendingRecurring(d: KoloData): RecurringPost[] {
   }
   return out;
 }
+
+/* ============================================================
+   CIRCLE MARKETPLACE / GROW  helpers + static data
+   ============================================================ */
+export function circlePot(c: { amount: number; members: unknown[] }) {
+  return c.amount * c.members.length;
+}
+export function payoutRecipient(c: CircleFull, cycleIdx: number) {
+  if (!c.members.length) return null;
+  const slot = (cycleIdx % c.members.length) + 1;
+  return c.members.find((m) => m.slot === slot) || null;
+}
+export function cyclesCompletedByUser(circles: CircleFull[], userId: string) {
+  let n = 0;
+  for (const c of circles) {
+    const me = c.members.find((m) => m.userId === userId);
+    if (!me) continue;
+    const cur = circleCycleIndex(c);
+    for (let i = 0; i < cur; i++) {
+      if (circleCycleDue(c, i) < D(me.joinedAt)) continue;
+      if (circleContribStatus(c, i, userId).paid) n++;
+    }
+  }
+  return n;
+}
+export function floatProjectedYield(pot: number, days: number) {
+  // simulated: ~20% p.a. money-market rate, pro-rated
+  return Math.round((pot * 0.2 * days) / 365);
+}
+
+export const SEED_DISCOVER = [
+  {
+    id: "seed-yaba",
+    code: "YABA24",
+    name: "Yaba Traders Adashe",
+    orgLabel: "Yaba Market Traders Assoc.",
+    category: "Business",
+    blurb:
+      "Long-running association circle. Pot rotates monthly; organiser stakes ₦300k against default.",
+    amount: 100000,
+    cadence: "monthly",
+    type: "rotating",
+    maxSize: 15,
+    memberCount: 15,
+    reliabilityFloor: 88,
+    guaranteeFund: 100000,
+    organiserStake: 300000,
+    completion: 99,
+    cyclesDone: 24,
+    seed: true,
+  },
+  {
+    id: "seed-rent",
+    code: "IKEJA12",
+    name: "Ikeja Rent Circle 12",
+    orgLabel: "Organiser: Ada O. · 96% track record",
+    category: "Rent",
+    blurb:
+      "For members clearing annual rent. Payout timed to landlords' Q1 renewal window.",
+    amount: 75000,
+    cadence: "monthly",
+    type: "rotating",
+    maxSize: 12,
+    memberCount: 9,
+    reliabilityFloor: 80,
+    guaranteeFund: 75000,
+    organiserStake: 150000,
+    completion: 100,
+    cyclesDone: 6,
+    seed: true,
+  },
+  {
+    id: "seed-detty",
+    code: "DETTY26",
+    name: "Detty December Fund",
+    orgLabel: "Organiser: Tobi A. · verified",
+    category: "Target",
+    blurb:
+      "Everyone saves weekly; the whole fund unlocks to each member on 20 Dec. No rotation.",
+    amount: 25000,
+    cadence: "weekly",
+    type: "target",
+    maxSize: 20,
+    memberCount: 15,
+    reliabilityFloor: 70,
+    guaranteeFund: 25000,
+    organiserStake: 100000,
+    completion: 97,
+    cyclesDone: 4,
+    seed: true,
+  },
+  {
+    id: "seed-school",
+    code: "FEESAJ",
+    name: "Second-Term Fees Ajo",
+    orgLabel: "Organiser: Mrs Balogun · 3 circles run",
+    category: "School fees",
+    blurb: "Timed so each payout lands two weeks before a school term begins.",
+    amount: 60000,
+    cadence: "monthly",
+    type: "rotating",
+    maxSize: 10,
+    memberCount: 8,
+    reliabilityFloor: 85,
+    guaranteeFund: 60000,
+    organiserStake: 180000,
+    completion: 98,
+    cyclesDone: 9,
+    seed: true,
+  },
+  {
+    id: "seed-biz",
+    code: "STOCK08",
+    name: "Balogun Stock-Up Circle",
+    orgLabel: "Balogun Market Women Assoc.",
+    category: "Business",
+    blurb:
+      "High-value restocking circle. Perfect payment record over 5 years; strict reliability floor.",
+    amount: 150000,
+    cadence: "monthly",
+    type: "rotating",
+    maxSize: 8,
+    memberCount: 7,
+    reliabilityFloor: 92,
+    guaranteeFund: 150000,
+    organiserStake: 450000,
+    completion: 100,
+    cyclesDone: 40,
+    seed: true,
+  },
+];
+
+export const NAIRA_PRODUCTS = [
+  {
+    name: "Money Market Fund",
+    kind: "naira" as const,
+    risk: "low",
+    riskLabel: "Low",
+    ret: "20% p.a.",
+    retNote: "est., variable",
+    min: 5000,
+    liq: "Withdraw in 1 day",
+    desc: "Pools into Treasury bills and top-bank placements. The usual home for an idle pot.",
+    long:
+      "A regulated naira money-market fund. Yield tracks the central bank rate and moves over time. Historically stable in value but not guaranteed; no lock-in.",
+  },
+  {
+    name: "Treasury Bills · 91-day",
+    kind: "naira" as const,
+    risk: "lower",
+    riskLabel: "Lower",
+    ret: "22% p.a.",
+    retNote: "fixed at purchase",
+    min: 50000,
+    liq: "Locked 91 days",
+    desc: "Lending directly to the Federal Government for one quarter. Rate fixed on the day you buy.",
+    long:
+      "FGN Treasury bills held to maturity. The safest naira instrument here — backed by the government — but your money is locked for the full 91 days.",
+  },
+  {
+    name: "Fixed Savings Lock",
+    kind: "naira" as const,
+    risk: "lower",
+    riskLabel: "Lower",
+    ret: "18% p.a.",
+    retNote: "fixed",
+    min: 10000,
+    liq: "Choose 30–180 days",
+    desc: "Set an amount aside for a fixed term at a rate agreed upfront. Break early and you forfeit the interest.",
+    long:
+      "A term deposit with a partner bank. Principal is protected; breaking the lock early costs the accrued interest, not the principal.",
+  },
+];
+export const DOLLAR_PRODUCTS = [
+  {
+    name: "Dollar Fund (USD)",
+    kind: "dollar" as const,
+    risk: "low",
+    riskLabel: "Low",
+    ret: "≈6% p.a.",
+    retNote: "+ naira hedge",
+    min: 15000,
+    liq: "Withdraw in 3 days",
+    desc: "Holds US-dollar Eurobonds. Mainly a hedge against the naira sliding, with a modest yield.",
+    long:
+      "A dollar-denominated bond fund. The point is currency protection: if the naira weakens, your balance in naira terms rises. Bond prices can still move; FX spreads apply.",
+  },
+  {
+    name: "Stablecoin Savings (USDC)",
+    kind: "dollar" as const,
+    risk: "medium",
+    riskLabel: "Medium",
+    ret: "≈8% p.a.",
+    retNote: "variable",
+    min: 2000,
+    liq: "Instant",
+    desc: "Hold value in dollars on-chain and earn lending yield. Instant in and out. Not NDIC-insured.",
+    long:
+      "Your balance is converted to USDC, a dollar-pegged stablecoin, and lent through vetted protocols for yield. Removes naira exposure and moves instantly, but adds smart-contract and custody risk, and the peg can wobble in stress.",
+  },
+  {
+    name: "Growth Sleeve (BTC/ETH)",
+    kind: "dollar" as const,
+    risk: "higher",
+    riskLabel: "Higher",
+    ret: "Volatile",
+    retNote: "can lose value fast",
+    min: 5000,
+    liq: "Instant",
+    desc: "A small Bitcoin/Ether basket for members who want upside. Hard-capped at 10% of your balance.",
+    long:
+      "A market-cap-weighted basket of Bitcoin and Ether. Historically high growth over long periods and severe drops in between. Kolo caps this at 10% of your available balance so a bad run can't touch the money your circle is counting on.",
+  },
+];

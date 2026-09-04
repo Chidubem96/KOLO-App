@@ -8,8 +8,12 @@ import {
   useState,
 } from "react";
 import { supabase } from "./supabase";
-import { loadKolo, addTxns, recordContribution } from "./api";
-import { pendingRecurring } from "./engine";
+import { loadKolo, addTxns, recordContribution, syncDirectory } from "./api";
+import {
+  pendingRecurring,
+  myReliability,
+  cyclesCompletedByUser,
+} from "./engine";
 import type { KoloData } from "./types";
 import { todayStr } from "./format";
 
@@ -20,6 +24,7 @@ interface Ctx {
   clearRecurringNote: () => void;
   reload: () => Promise<void>;
   signOut: () => Promise<void>;
+  toast: (msg: string) => void;
 }
 const KoloCtx = createContext<Ctx | null>(null);
 
@@ -33,7 +38,14 @@ export function KoloProvider({
   const [data, setData] = useState<KoloData | null>(null);
   const [loading, setLoading] = useState(true);
   const [recurringPosted, setRecurringPosted] = useState(0);
+  const [toastMsg, setToastMsg] = useState("");
   const busy = useRef(false);
+  const toastT = useRef<any>(null);
+  const toast = useCallback((msg: string) => {
+    setToastMsg(msg);
+    clearTimeout(toastT.current);
+    toastT.current = setTimeout(() => setToastMsg(""), 2800);
+  }, []);
 
   const applyRecurring = useCallback(async (d: KoloData) => {
     const pend = pendingRecurring(d);
@@ -78,6 +90,7 @@ export function KoloProvider({
     return pend.length;
   }, []);
 
+  const lastDir = useRef("");
   const reload = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
@@ -89,6 +102,31 @@ export function KoloProvider({
         setRecurringPosted((n) => n + posted);
       }
       setData(d);
+      // keep my public directory card in sync (name, reliability, verification)
+      try {
+        const rel = myReliability(d.circles, d.userId);
+        const score = d.profile.reliabilityScore
+          ? Math.round((d.profile.reliabilityScore + rel.score) / 2)
+          : rel.score;
+        const sig = JSON.stringify([
+          d.profile.name,
+          score,
+          d.profile.bvnVerified,
+          d.profile.ninVerified,
+          d.profile.phoneVerified,
+        ]);
+        if (sig !== lastDir.current) {
+          lastDir.current = sig;
+          await syncDirectory(userId, {
+            name: d.profile.name || "Member",
+            reliabilityScore: score,
+            cyclesCompleted: cyclesCompletedByUser(d.circles, d.userId),
+            bvnVerified: d.profile.bvnVerified,
+            ninVerified: d.profile.ninVerified,
+            phoneVerified: d.profile.phoneVerified,
+          });
+        }
+      } catch {}
     } finally {
       busy.current = false;
       setLoading(false);
@@ -123,6 +161,21 @@ export function KoloProvider({
         },
         () => reload()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "circle_disputes", filter: filt },
+        () => reload()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "circle_join_requests", filter: filt },
+        () => reload()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "circle_float_votes", filter: filt },
+        () => reload()
+      )
       .subscribe();
     return () => {
       sb.removeChannel(ch);
@@ -152,9 +205,11 @@ export function KoloProvider({
         clearRecurringNote: () => setRecurringPosted(0),
         reload,
         signOut,
+        toast,
       }}
     >
       {children}
+      <div className={"toast" + (toastMsg ? " show" : "")}>{toastMsg}</div>
     </KoloCtx.Provider>
   );
 }

@@ -1,44 +1,32 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useKolo } from "@/lib/store";
+import { useSheet } from "../sheet-context";
 import {
+  circleContribStatus,
+  circleCycleDue,
+  circleCycleIndex,
+  circlePot,
   homeNudge,
   monthlyAccrual,
+  payoutRecipient,
   recoveryOptions,
   safeToSpend,
 } from "@/lib/engine";
-import { saveProfile, updateGoal } from "@/lib/api";
-import { fmt, fmtDate, fmtSigned, clamp } from "@/lib/format";
+import { saveProfile, updateGoal, recordContribution, addTxns } from "@/lib/api";
+import { fmt, fmtDate, fmtSigned, clamp, todayStr } from "@/lib/format";
 import { Icon } from "../ui";
+import { CircleDetail } from "../sheets/CircleDetail";
+import { AskSheet } from "../sheets/AskSheet";
 
 export function Home({ goTo }: { goTo: (t: any) => void }) {
-  const { data, reload, recurringPosted, clearRecurringNote } = useKolo();
+  const { data, reload, recurringPosted, clearRecurringNote, toast } = useKolo();
   const d = data!;
+  const sheet = useSheet();
   const r = safeToSpend(d);
   const [open, setOpen] = useState<string | null>(null);
-  const figRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const node = figRef.current;
-    if (!node || window.matchMedia("(prefers-reduced-motion:reduce)").matches) {
-      if (node) node.textContent = fmtSigned(r.sts);
-      return;
-    }
-    const target = r.sts;
-    const start = performance.now();
-    let raf = 0;
-    const tick = (now: number) => {
-      const p = clamp((now - start) / 260, 0, 1);
-      const e = 1 - Math.pow(1 - p, 3);
-      node.textContent = fmtSigned(Math.round(target * e));
-      if (p < 1) raf = requestAnimationFrame(tick);
-      else node.textContent = fmtSigned(target);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [r.sts]);
-
   const neg = r.sts < 0;
+
   const rows = [
     {
       key: "oblig",
@@ -57,10 +45,7 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
     {
       key: "goal",
       label: "Goal accruals",
-      sub:
-        r.goalItems.length +
-        " active goal" +
-        (r.goalItems.length === 1 ? "" : "s"),
+      sub: r.goalItems.length + " active goal" + (r.goalItems.length === 1 ? "" : "s"),
       val: r.goalTotal,
       items: r.goalItems,
     },
@@ -72,24 +57,20 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
       items: null as any,
     },
   ];
-
   const nudge = homeNudge(d, r);
+
+  const myCycleCircles = d.circles.filter((c) =>
+    c.members.some((m) => m.userId === d.userId)
+  );
 
   return (
     <div className="pad">
-      <div className="hero">
-        <div className="hero-kick">
-          Safe to spend · until {fmtDate(r.horizon)}
-        </div>
-        <div
-          ref={figRef}
-          className={"hero-fig" + (neg ? " neg" : "")}
-        >
-          {fmtSigned(r.sts)}
-        </div>
-        <div className="hero-sub">
+      <div className="sts">
+        <div className="tag">Safe to spend · until {fmtDate(r.horizon)}</div>
+        <div className={"fig" + (neg ? " neg" : "")}>{fmtSigned(r.sts)}</div>
+        <div className="sub">
           of <b>{fmt(r.availableLiquid)}</b> across {r.accountCount} account
-          {r.accountCount === 1 ? "" : "s"}. Every line below is tappable.
+          {r.accountCount === 1 ? "" : "s"}
         </div>
         {r.partial && (
           <div className="partial-tag">Partial — {r.reasons.join(" · ")}</div>
@@ -107,40 +88,29 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
                 {row.label}
                 <small>{row.sub}</small>
               </div>
-              <div className="v minus">−{fmt(row.val)}</div>
+              <div className="v">−{fmt(row.val)}</div>
               <span className="chev">{Icon.chev}</span>
             </button>
             {open === row.key && (
               <div className="brk-detail">
                 {row.key === "buffer" ? (
-                  <>
-                    <div className="brk-line">
-                      <span>
-                        {r.buffer.weak
-                          ? "Estimated at 12% of liquid balance until Kolo has 2+ weeks of spending history."
-                          : "Half a standard deviation of your weekly discretionary spend over 90 days."}
-                      </span>
+                  <div style={{ padding: 8 }}>
+                    <div className="kicker" style={{ marginBottom: 6 }}>
+                      Buffer sensitivity — k = {d.profile.bufferK}
                     </div>
-                    <div style={{ padding: 8 }}>
-                      <div className="kicker" style={{ marginBottom: 6 }}>
-                        Buffer sensitivity — k = {d.profile.bufferK}
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={1.5}
-                        step={0.1}
-                        defaultValue={d.profile.bufferK}
-                        style={{ width: "100%" }}
-                        onChange={async (e) => {
-                          await saveProfile(d.userId, {
-                            buffer_k: Number(e.target.value),
-                          });
-                          reload();
-                        }}
-                      />
-                    </div>
-                  </>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1.5}
+                      step={0.1}
+                      defaultValue={d.profile.bufferK}
+                      style={{ width: "100%", accentColor: "var(--brand)" }}
+                      onChange={async (e) => {
+                        await saveProfile(d.userId, { buffer_k: Number(e.target.value) });
+                        reload();
+                      }}
+                    />
+                  </div>
                 ) : row.items && row.items.length ? (
                   row.items.map((it: any, i: number) => (
                     <div key={i} className="brk-line">
@@ -168,34 +138,24 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
       </div>
 
       {neg && (
-        <div
-          className="card"
-          style={{ marginTop: 16, borderColor: "var(--critical-wash)" }}
-        >
-          <p
-            className="kicker"
-            style={{ color: "var(--critical)", marginBottom: 8 }}
-          >
+        <div className="card" style={{ marginTop: 14, borderColor: "rgba(255,92,108,.3)" }}>
+          <p className="kicker" style={{ color: "var(--neg)", marginBottom: 8 }}>
             Three ways back — pick one
           </p>
           {recoveryOptions(d, r).opts.map((o, i) => (
-            <div
-              key={i}
-              className="lrow"
-              style={{ cursor: "default" }}
-            >
+            <div key={i} className="lrow" style={{ cursor: "default" }}>
               <div className="grow">
-                <div className="t" style={{ fontSize: 13.5 }}>
+                <div className="t" style={{ fontSize: 13 }}>
                   {o.label}
                 </div>
                 {o.note && <div className="s">{o.note}</div>}
               </div>
-              <div className="r" style={{ color: "var(--good)" }}>
+              <div className="r" style={{ color: "var(--pos)" }}>
                 +{fmt(o.gain)}
               </div>
               {o.kind !== "manual" && (
                 <button
-                  className="btn sm brass"
+                  className="btn sm"
                   onClick={async () => {
                     if (o.kind === "pauseGoal" && o.id)
                       await updateGoal(o.id, { paused: true });
@@ -215,19 +175,9 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
       {recurringPosted > 0 && (
         <div
           className="advise"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 10,
-          }}
+          style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}
         >
-          <span>
-            <b style={{ display: "inline", margin: 0 }}>Auto-logged&nbsp;&nbsp;</b>
-            {recurringPosted} recurring{" "}
-            {recurringPosted === 1 ? "payment" : "payments"} posted — rent, dues
-            and mandates you don&apos;t re-enter.
-          </span>
+          <span>{recurringPosted} recurring payment{recurringPosted === 1 ? "" : "s"} auto-logged.</span>
           <button className="btn sm ghost" onClick={clearRecurringNote}>
             OK
           </button>
@@ -239,14 +189,88 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
         {nudge.text}
       </div>
 
-      <div className="btnrow" style={{ marginTop: 18 }}>
-        <button className="btn ghost sm" onClick={() => goTo("money")}>
-          Log a spend
+      <div className="btnrow" style={{ marginTop: 14 }}>
+        <button className="btn ghost sm" onClick={() => sheet.open(<AskSheet />)}>
+          Ask Kolo
         </button>
-        <button className="btn ghost sm" onClick={() => goTo("ask")}>
-          Ask Kolo why
+        <button className="btn ghost sm" onClick={() => goTo("you")}>
+          Spending & goals
         </button>
       </div>
+
+      {myCycleCircles.length > 0 && (
+        <>
+          <div className="section-label">Your circles this cycle</div>
+          {myCycleCircles.map((c) => {
+            const cur = circleCycleIndex(c);
+            const due = circleCycleDue(c, cur);
+            const st = circleContribStatus(c, cur, d.userId);
+            const paidCount = c.contributions.filter((x) => x.cycle === cur).length;
+            const rec = payoutRecipient(c, cur);
+            return (
+              <button
+                key={c.id}
+                className="card"
+                style={{ display: "block", width: "100%", textAlign: "left", marginBottom: 11 }}
+                onClick={() => sheet.open(<CircleDetail circleId={c.id} />)}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <div className="h-sec">{c.name}</div>
+                  <span className="mono" style={{ fontSize: 12, color: "var(--gold-soft)" }}>
+                    {fmt(circlePot(c))}
+                  </span>
+                </div>
+                <div className="hint" style={{ margin: "3px 0 9px" }}>
+                  {c.type === "target"
+                    ? "Target save · unlocks together"
+                    : (rec ? rec.name : "—") + " receives this cycle"}
+                  {" · "}
+                  {paidCount}/{c.members.length} paid
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  {st.paid ? (
+                    <span className="chip paid">you paid</span>
+                  ) : (
+                    <span className="chip due">your {fmt(c.amount)} due {fmtDate(due)}</span>
+                  )}
+                  {!st.paid && (
+                    <button
+                      className="btn sm gold"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await recordContribution({
+                          circleId: c.id,
+                          userId: d.userId,
+                          cycle: cur,
+                          amount: c.amount,
+                          paidOn: todayStr(),
+                          auto: false,
+                        });
+                        await addTxns(d.userId, [
+                          {
+                            date: todayStr(),
+                            amount: c.amount,
+                            category: "circle",
+                            note: c.name + " contribution",
+                            person: false,
+                            source: "circle",
+                            auto: false,
+                            period: null,
+                          },
+                        ] as any);
+                        toast(fmt(c.amount) + " contribution recorded for " + c.name);
+                        reload();
+                      }}
+                    >
+                      Pay {fmt(c.amount)}
+                    </button>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }

@@ -79,7 +79,7 @@ export function GoalDetail({ goalId }: { goalId: string }) {
           />
         </div>
         <button
-          className="btn brass"
+          className="btn gold"
           onClick={async () => {
             const v = parseMoney(addAmt);
             if (v <= 0) return;

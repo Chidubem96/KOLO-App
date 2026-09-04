@@ -32,7 +32,7 @@ export function TxnSheet({ mode: initial }: { mode: Mode }) {
           <button
             key={m}
             type="button"
-            className={"chip" + (mode === m ? " on" : "")}
+            className={"chip-btn" + (mode === m ? " on" : "")}
             onClick={() => setMode(m)}
           >
             {label}
@@ -70,7 +70,7 @@ function ManualForm() {
             <button
               key={c.id}
               type="button"
-              className={"chip" + (category === c.id ? " on" : "")}
+              className={"chip-btn" + (category === c.id ? " on" : "")}
               onClick={() => setCategory(c.id)}
             >
               {c.label}
@@ -98,7 +98,7 @@ function ManualForm() {
           gap: 8,
           alignItems: "center",
           fontSize: 13,
-          color: "var(--ink-soft)",
+          color: "var(--mut)",
           marginBottom: 14,
         }}
       >

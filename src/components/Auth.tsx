@@ -40,17 +40,11 @@ export function Auth() {
   return (
     <div className="authwrap">
       <div className="authcard">
-        <div
-          className="brand"
-          style={{ fontSize: 24, marginBottom: 6, gap: 8 }}
-        >
-          <span style={{ width: 20, height: 20, display: "inline-flex" }}>
-            {Icon.coin}
-          </span>
-          Kolo
+        <div className="wordmark-lg">
+          k<b>o</b>lo
         </div>
-        <p className="pull" style={{ margin: "10px 0 18px" }}>
-          Your balance is a lie. This is the honest number.
+        <p className="pull" style={{ margin: "14px 0 18px" }}>
+          Save in circles. Know what&apos;s yours to spend.
         </p>
 
         {step === "email" ? (
@@ -74,7 +68,7 @@ export function Auth() {
               />
             </div>
             {err && (
-              <p className="hint" style={{ color: "var(--critical)" }}>
+              <p className="hint" style={{ color: "var(--neg)" }}>
                 {err}
               </p>
             )}
@@ -108,7 +102,7 @@ export function Auth() {
               />
             </div>
             {err && (
-              <p className="hint" style={{ color: "var(--critical)" }}>
+              <p className="hint" style={{ color: "var(--neg)" }}>
                 {err}
               </p>
             )}

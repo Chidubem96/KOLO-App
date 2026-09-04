@@ -50,24 +50,13 @@ export function Onboarding() {
           <div className="pad" style={{ maxWidth: 400, margin: "0 auto" }}>
             {step === 1 && (
               <>
-                <div
-                  className="brand"
-                  style={{ fontSize: 26, margin: "20px 0 4px", gap: 8 }}
-                >
-                  <span
-                    style={{ width: 22, height: 22, display: "inline-flex" }}
-                  >
-                    {Icon.coin}
-                  </span>
-                  Kolo
+                <div className="wordmark-lg" style={{ margin: "18px 0 4px", fontSize: 34 }}>
+                  k<b>o</b>lo
                 </div>
-                <p className="pull">
-                  Your balance is a lie. This is the honest number.
-                </p>
+                <p className="pull">Save in circles. Know what&apos;s yours to spend.</p>
                 <p className="abouttext">
-                  Kolo does the arithmetic your head does every month — income,
-                  minus what&apos;s already owed, minus what your goals need —
-                  and shows the one figure that&apos;s actually yours to spend.
+                  Kolo runs your ajo circles, does the money arithmetic your head does badly, and
+                  shows the one figure that&apos;s actually yours to spend this month.
                 </p>
                 <Field label="Your name">
                   <input

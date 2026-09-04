@@ -30,7 +30,7 @@ import { CategorySheet } from "../sheets/CategorySheet";
 import { CatDetailSheet } from "../sheets/CatDetailSheet";
 import { ObligationSheet } from "../sheets/ObligationSheet";
 
-export function Money() {
+export function Money({ embedded }: { embedded?: boolean }) {
   const { data, reload, recurringPosted } = useKolo();
   const d = data!;
   const sheet = useSheet();
@@ -59,7 +59,7 @@ export function Money() {
   const maxC = cats.length ? cats[0][1] : 1;
 
   return (
-    <div className="pad">
+    <div className={embedded ? "" : "pad"}>
       <div className="metric-strip">
         <div>
           <div className="mv">{fmt(earned)}</div>
@@ -102,7 +102,7 @@ export function Money() {
       {unc.length > 0 && (
         <div
           className="card"
-          style={{ marginBottom: 14, borderColor: "var(--warn-wash)" }}
+          style={{ marginBottom: 14, borderColor: "rgba(245,166,35,.3)" }}
         >
           <p
             className="kicker"
@@ -153,7 +153,7 @@ export function Money() {
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 <button
-                  className="btn sm brass"
+                  className="btn sm gold"
                   onClick={async () => {
                     await addObligation(d.userId, {
                       label: x.label,
@@ -267,7 +267,7 @@ export function Money() {
               alignItems: "center",
               gap: 6,
               fontSize: 11,
-              color: "var(--muted)",
+              color: "var(--mut)",
             }}
           >
             <input

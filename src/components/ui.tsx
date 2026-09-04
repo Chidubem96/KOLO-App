@@ -4,6 +4,11 @@ import { CATS } from "@/lib/engine";
 import { parseMoney } from "@/lib/format";
 
 /* ---------- icons ---------- */
+const s = (d: React.ReactNode) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+    {d}
+  </svg>
+);
 export const Icon = {
   coin: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -12,44 +17,50 @@ export const Icon = {
       <path d="M4 12v6c0 1.8 3.6 3.2 8 3.2s8-1.4 8-3.2v-6" />
     </svg>
   ),
-  home: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+  home: s(
+    <>
       <path d="M3 10.5 12 4l9 6.5" />
       <path d="M5 9.5V20h14V9.5" />
-    </svg>
+    </>
   ),
-  money: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="6" width="18" height="12" rx="2" />
-      <circle cx="12" cy="12" r="2.6" />
-      <path d="M6 9v6M18 9v6" strokeLinecap="round" />
-    </svg>
-  ),
-  circles: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+  circles: s(
+    <>
       <circle cx="9" cy="9" r="3.2" />
       <path d="M3.5 19c.7-3 3-4.5 5.5-4.5S13.8 16 14.5 19" />
       <path d="M16 6.5a3 3 0 0 1 0 5.8M17 14.5c2.2.4 3.8 1.9 4.4 4.5" />
-    </svg>
+    </>
   ),
-  goals: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="12" cy="12" r="1" />
-    </svg>
+  discover: s(
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" strokeLinecap="round" />
+      <path d="M11 8.5 12.2 11l2.5 1.2-2.5 1.1L11 15.7 9.9 13.3 7.4 12.2 9.9 11z" />
+    </>
   ),
-  ask: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+  grow: s(
+    <>
+      <path d="M4 19h16" strokeLinecap="round" />
+      <path d="M7 15l3.5-4 3 2.5L18 7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 7h4v4" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  you: s(
+    <>
+      <circle cx="12" cy="8" r="3.4" />
+      <path d="M5.5 20c.7-3.6 3.4-5.5 6.5-5.5s5.8 1.9 6.5 5.5" />
+    </>
+  ),
+  ask: s(
+    <>
       <path d="M4 5h16v11H8l-4 3.5z" strokeLinejoin="round" />
       <path d="M9 9h6M9 12h4" strokeLinecap="round" />
-    </svg>
+    </>
   ),
-  gear: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+  gear: s(
+    <>
       <circle cx="12" cy="12" r="3" />
       <path d="M12 3v2.5M12 18.5V21M4.2 7l2.2 1.3M17.6 15.7l2.2 1.3M4.2 17l2.2-1.3M17.6 8.3l2.2-1.3" />
-    </svg>
+    </>
   ),
   back: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -57,7 +68,7 @@ export const Icon = {
     </svg>
   ),
   plus: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
       <path d="M12 5v14M5 12h14" strokeLinecap="round" />
     </svg>
   ),
@@ -71,6 +82,19 @@ export const Icon = {
       <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
     </svg>
   ),
+  money: s(
+    <>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.6" />
+    </>
+  ),
+  goals: s(
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="12" cy="12" r="1" />
+    </>
+  ),
 };
 
 /* ---------- sheet ---------- */
@@ -79,7 +103,7 @@ export function Sheet({
   onClose,
   children,
 }: {
-  title: string;
+  title?: string;
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -94,8 +118,9 @@ export function Sheet({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="sheet">
+        <div className="grabber" />
         <div className="sheet-hd">
-          <h3>{title}</h3>
+          <h3>{title || ""}</h3>
           <button className="iconbtn" aria-label="Close" onClick={onClose}>
             {Icon.x}
           </button>
@@ -150,17 +175,17 @@ export function MoneyInput({
   );
 }
 
-export function Seg<T extends string>({
+export function Seg({
   options,
   value,
   onChange,
 }: {
-  options: [T, string][];
-  value: T;
-  onChange: (v: T) => void;
+  options: [string, string][];
+  value: string;
+  onChange: (v: any) => void;
 }) {
   return (
-    <div className="seg">
+    <div className="opts">
       {options.map(([v, label]) => (
         <button
           key={v}
@@ -183,10 +208,7 @@ export function CatSelect({
   onChange: (v: string | null) => void;
 }) {
   return (
-    <select
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value || null)}
-    >
+    <select value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}>
       <option value="">— pick a category —</option>
       {CATS.map((c) => (
         <option key={c.id} value={c.id}>
@@ -205,4 +227,40 @@ export function Pill({
   children: React.ReactNode;
 }) {
   return <span className={"pill " + kind}>{children}</span>;
+}
+
+/* ---------- reliability ring ---------- */
+export function Ring({ score }: { score: number }) {
+  const r = 33;
+  const circ = 2 * Math.PI * r;
+  const off = circ * (1 - Math.max(0, Math.min(100, score)) / 100);
+  const col =
+    score >= 95 ? "var(--pos)" : score >= 85 ? "var(--warn)" : "var(--neg)";
+  return (
+    <div className="ring">
+      <svg width="82" height="82" viewBox="0 0 82 82">
+        <circle cx="41" cy="41" r={r} fill="none" stroke="var(--line)" strokeWidth="7" />
+        <circle
+          cx="41"
+          cy="41"
+          r={r}
+          fill="none"
+          stroke={col}
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={off}
+        />
+      </svg>
+      <div className="val" style={{ color: col }}>
+        {score}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- avatar helper ---------- */
+export function initials(n: string) {
+  const p = (n || "?").trim().split(/\s+/);
+  return ((p[0]?.[0] || "?") + (p[1]?.[0] || "")).toUpperCase();
 }

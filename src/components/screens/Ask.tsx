@@ -67,7 +67,7 @@ export function Ask() {
 
   return (
     <div>
-      <div className="pad">
+      <div style={{ minHeight: 200 }}>
         {msgs.length === 0 ? (
           <>
             <div className="advise" style={{ marginTop: 4 }}>

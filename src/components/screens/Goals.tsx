@@ -7,14 +7,14 @@ import { GoalSheet } from "../sheets/GoalSheet";
 import { GoalDetail } from "../sheets/GoalDetail";
 import { Icon } from "../ui";
 
-export function Goals() {
+export function Goals({ embedded }: { embedded?: boolean }) {
   const { data } = useKolo();
   const d = data!;
   const sheet = useSheet();
   const totalAccrual = sum(d.goals.map(monthlyAccrual));
 
   return (
-    <div className="pad">
+    <div className={embedded ? "" : "pad"}>
       <p className="kicker" style={{ marginBottom: 12 }}>
         {d.goals.length} goal{d.goals.length === 1 ? "" : "s"} ·{" "}
         {fmt(totalAccrual)} / month accruing
@@ -31,7 +31,7 @@ export function Goals() {
             it&apos;s spoken for.
           </p>
           <button
-            className="btn brass"
+            className="btn gold"
             style={{ marginTop: 14 }}
             onClick={() => sheet.open(<GoalSheet />)}
           >

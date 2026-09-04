@@ -6,25 +6,24 @@ import {
   circleContribStatus,
   circleCycleDue,
   circleCycleIndex,
+  circlePot,
   myReliability,
-  safeToSpend,
 } from "@/lib/engine";
 import { joinCircle, peekCircle } from "@/lib/api";
 import { fmt, fmtDate } from "@/lib/format";
-import { Icon } from "../ui";
+import { Icon, Ring } from "../ui";
 import { CircleSheet } from "../sheets/CircleSheet";
 import { CircleDetail } from "../sheets/CircleDetail";
 
 export function Circles() {
-  const { data, reload } = useKolo();
+  const { data, reload, toast } = useKolo();
   const d = data!;
   const sheet = useSheet();
   const rel = myReliability(d.circles, d.userId);
-  const r = safeToSpend(d);
 
   const [code, setCode] = useState("");
   const [peek, setPeek] = useState<any>(null);
-  const [joining, setJoining] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
   const doPeek = async () => {
@@ -36,72 +35,45 @@ export function Circles() {
     else setPeek(p);
   };
   const doJoin = async () => {
-    setJoining(true);
+    setBusy(true);
     try {
       await joinCircle(code.trim(), d.profile.name || "Member");
       setCode("");
       setPeek(null);
+      toast("Joined " + (peek?.name || "the circle"));
       await reload();
     } catch (e: any) {
       setErr(e.message || "Could not join.");
     }
-    setJoining(false);
+    setBusy(false);
   };
 
   return (
     <div className="pad">
-      <div
-        className="card"
-        style={{
-          marginBottom: 14,
-          background: "var(--brand-wash)",
-          borderColor: "transparent",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-          }}
-        >
-          <div>
-            <p className="kicker" style={{ color: "var(--brand-deep)" }}>
-              Your reliability
-            </p>
-            <div
-              style={{
-                fontFamily: "var(--f-display)",
-                fontWeight: 600,
-                fontSize: 28,
-                color: "var(--brand-deep)",
-              }}
-            >
-              {rel.total ? rel.score : "—"}
-            </div>
-          </div>
-          <div
-            style={{
-              textAlign: "right",
-              fontSize: 12,
-              color: "var(--brand-deep)",
-            }}
-          >
-            <div>
+      <div className="scr-head">
+        <div>
+          <h1>Circles</h1>
+          <div className="meta">Your ajo, esusu, cooperative & family funds</div>
+        </div>
+      </div>
+
+      <div className="card" style={{ background: "var(--card-2)", borderColor: "transparent" }}>
+        <div className="ring-wrap">
+          <Ring score={rel.total ? rel.score : 100} />
+          <div className="txt">
+            <div className="big">Your reliability</div>
+            <div className="small">
               {rel.total
-                ? rel.onTime + " / " + rel.total + " on time"
-                : "no history yet"}
-            </div>
-            <div className="dim" style={{ marginTop: 2 }}>
-              portable across every circle
+                ? rel.onTime + " / " + rel.total + " contributions on time · portable to any circle"
+                : "No history yet — complete a cycle to build it"}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 14 }}>
+      <div className="card" style={{ marginTop: 11 }}>
         <p className="kicker" style={{ marginBottom: 8 }}>
-          Join a circle
+          Join with a code
         </p>
         <div style={{ display: "flex", gap: 8 }}>
           <input
@@ -110,9 +82,9 @@ export function Circles() {
             style={{
               flex: 1,
               padding: "10px 12px",
-              border: "1px solid var(--rule)",
-              borderRadius: 10,
-              background: "var(--surface)",
+              border: "1px solid var(--line)",
+              borderRadius: 11,
+              background: "var(--bg)",
               textTransform: "uppercase",
               letterSpacing: "0.15em",
               fontFamily: "var(--f-mono)",
@@ -124,23 +96,18 @@ export function Circles() {
           </button>
         </div>
         {err && (
-          <p className="hint" style={{ color: "var(--critical)" }}>
+          <p className="hint" style={{ color: "var(--neg)" }}>
             {err}
           </p>
         )}
         {peek && (
           <div style={{ marginTop: 10 }}>
             <p className="hint">
-              <b>{peek.name}</b> · {fmt(Number(peek.amount))}/{peek.cadence} ·{" "}
-              {peek.members} member{peek.members === 1 ? "" : "s"}
+              <b style={{ color: "var(--ink)" }}>{peek.name}</b> · {fmt(Number(peek.amount))}/
+              {peek.cadence} · {peek.members} member{peek.members === 1 ? "" : "s"}
             </p>
-            <button
-              className="btn brass block"
-              style={{ marginTop: 8 }}
-              disabled={joining}
-              onClick={doJoin}
-            >
-              {joining ? "Joining…" : "Join this circle"}
+            <button className="btn full" disabled={busy} onClick={doJoin}>
+              {busy ? "Joining…" : "Join this circle"}
             </button>
           </div>
         )}
@@ -148,20 +115,13 @@ export function Circles() {
 
       {!d.circles.length && (
         <div className="empty">
-          <span style={{ width: 34, height: 34, display: "inline-flex" }}>
-            {Icon.circles}
-          </span>
+          <span style={{ width: 32, height: 32, display: "inline-flex" }}>{Icon.circles}</span>
           <p>No circles yet.</p>
           <p className="hint">
-            A circle is your ajo, esusu, cooperative or family fund — the
-            schedule, the members and the ledger, in one place, synced with
-            everyone in it.
+            Create one and share the code, join a friend&apos;s with a code, or find a public
+            circle under Discover.
           </p>
-          <button
-            className="btn brass"
-            style={{ marginTop: 14 }}
-            onClick={() => sheet.open(<CircleSheet />)}
-          >
+          <button className="btn" style={{ marginTop: 14 }} onClick={() => sheet.open(<CircleSheet />)}>
             Create a circle
           </button>
         </div>
@@ -170,103 +130,56 @@ export function Circles() {
       {d.circles.map((c) => {
         const cur = circleCycleIndex(c);
         const due = circleCycleDue(c, cur);
+        const st = circleContribStatus(c, cur, d.userId);
         const paidCount = c.contributions.filter((x) => x.cycle === cur).length;
-        const myst = circleContribStatus(c, cur, d.userId);
-        const pot = c.amount * c.members.length;
+        const openDisputes = c.disputes.filter((x) => x.status === "open").length;
+        const pendingReqs =
+          c.createdBy === d.userId
+            ? c.joinRequests.filter((x) => x.status === "pending").length
+            : 0;
         return (
-          <div key={c.id}>
-            <button
-              className="card"
-              style={{
-                display: "block",
-                width: "100%",
-                textAlign: "left",
-                marginBottom: 12,
-              }}
-              onClick={() => sheet.open(<CircleDetail circleId={c.id} />)}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                }}
-              >
-                <div className="h-sec">{c.name}</div>
-                <span className="pill neutral">{c.type}</span>
-              </div>
-              <p className="hint" style={{ margin: "4px 0 10px" }}>
-                {fmt(c.amount)} / {c.cadence} · {c.members.length} members · pot{" "}
-                {fmt(pot)} · code {c.code}
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  className={
-                    "pill " +
-                    (paidCount === c.members.length ? "ok" : "warn")
-                  }
-                >
-                  {paidCount} of {c.members.length} paid
-                </span>
-                <span
-                  className={
-                    "pill " +
-                    (myst.paid ? "ok" : myst.late ? "bad" : "warn")
-                  }
-                >
-                  {myst.paid
-                    ? "you paid"
-                    : myst.late
-                    ? "you're late"
-                    : "your turn " + fmtDate(due)}
-                </span>
-              </div>
-            </button>
-            {!myst.paid && r.availableLiquid < c.amount && (
-              <div
-                className="advise warn"
-                style={{ marginTop: -6, marginBottom: 12 }}
-              >
-                <b>Warn before miss</b>
-                Your {fmt(c.amount)} contribution to &quot;{c.name}&quot; is due{" "}
-                {fmtDate(due)} and your liquid balance is{" "}
-                {fmt(r.availableLiquid)}.
-              </div>
-            )}
-          </div>
+          <button
+            key={c.id}
+            className="card"
+            style={{ display: "block", width: "100%", textAlign: "left", marginTop: 11 }}
+            onClick={() => sheet.open(<CircleDetail circleId={c.id} />)}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <div className="h-sec">{c.name}</div>
+              <span className="chip neutral">{c.type}</span>
+            </div>
+            <p className="hint" style={{ margin: "4px 0 10px" }}>
+              {fmt(c.amount)} / {c.cadence} · {c.members.length} members · pot{" "}
+              {fmt(circlePot(c))} · code {c.code}
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <span className={"chip " + (paidCount === c.members.length ? "paid" : "due")}>
+                {paidCount}/{c.members.length} paid
+              </span>
+              <span className={"chip " + (st.paid ? "paid" : st.late ? "missed" : "due")}>
+                {st.paid ? "you paid" : st.late ? "you're late" : "your turn " + fmtDate(due)}
+              </span>
+              {openDisputes > 0 && <span className="chip missed">{openDisputes} dispute</span>}
+              {pendingReqs > 0 && <span className="chip due">{pendingReqs} to review</span>}
+            </div>
+          </button>
         );
       })}
 
       {d.circles.length > 0 && (
         <button
-          className="btn ghost block"
+          className="btn ghost full"
+          style={{ marginTop: 14 }}
           onClick={() => sheet.open(<CircleSheet />)}
         >
           + New circle
         </button>
       )}
 
-      <div
-        className="card"
-        style={{
-          marginTop: 16,
-          background: "var(--surface-2)",
-          borderColor: "transparent",
-        }}
-      >
-        <p className="hint" style={{ margin: 0 }}>
-          Circles sync live between everyone in them. Auto-debit posts your
-          contribution on the due date (toggle it in a circle). In this V1 there
-          is no escrow account — contributions are recorded, not moved.
-        </p>
-      </div>
+      <p className="disclosure">
+        V1: circles are recorded, not settled. Contributions and payouts are tracked and shared
+        live; no real money moves and there is no escrow account yet.
+      </p>
     </div>
   );
 }

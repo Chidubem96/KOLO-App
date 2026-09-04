@@ -20,7 +20,7 @@ export function CategorySheet({ txn }: { txn: Txn }) {
           <button
             key={c.id}
             type="button"
-            className="chip"
+            className="chip-btn"
             onClick={async () => {
               await setTxnCategory(txn.id, c.id);
               await reload();

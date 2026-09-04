@@ -7,7 +7,7 @@ import { AccountSheet } from "../sheets/AccountSheet";
 import { fmt } from "@/lib/format";
 import { deleteRow } from "@/lib/api";
 
-export function Settings() {
+export function Settings({ embedded }: { embedded?: boolean }) {
   const { data, reload, signOut } = useKolo();
   const d = data!;
   const sheet = useSheet();
@@ -18,8 +18,8 @@ export function Settings() {
   };
 
   return (
-    <div className="pad">
-      <h3 className="h-sec">You</h3>
+    <div className={embedded ? "" : "pad"}>
+      <h3 className="h-sec">Profile</h3>
       <Field label="Name">
         <input
           defaultValue={p.name}

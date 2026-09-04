@@ -22,8 +22,9 @@ You need three free accounts: **Supabase**, **Vercel**, **Anthropic**.
 
 1. Create a project at <https://supabase.com/dashboard> (any region near your users; free tier is fine).
 2. Open **SQL Editor → New query**, paste the entire contents of
-   [`supabase/schema.sql`](supabase/schema.sql), and click **Run**. It creates the
-   tables, row-level security, the circle RPCs, and turns on realtime. Safe to re-run.
+   [`supabase/schema.sql`](supabase/schema.sql), click **Run**, then do the same with
+   [`supabase/schema-v2.sql`](supabase/schema-v2.sql) (Discover, disputes, guarantee
+   fund, Grow, identity). Both are safe to re-run.
 3. **Authentication → Sign In / Providers → Email**: keep **Email** enabled, and
    turn **Confirm email** *off* (so first sign-in is one step). Leave "Enable email
    OTP" on (default).

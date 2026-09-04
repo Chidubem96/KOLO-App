@@ -66,7 +66,7 @@ export function ObligationSheet({ oblId }: { oblId?: string }) {
           gap: 8,
           alignItems: "center",
           fontSize: 13,
-          color: "var(--ink-soft)",
+          color: "var(--mut)",
           margin: "2px 0 16px",
         }}
       >
