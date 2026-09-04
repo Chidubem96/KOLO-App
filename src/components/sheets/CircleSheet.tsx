@@ -88,12 +88,29 @@ export function CircleSheet() {
               options={[
                 ["rotating", "Rotating"],
                 ["target", "Target"],
+                ["purpose", "One-off"],
                 ["family", "Family"],
               ]}
               value={d.type}
               onChange={(v) => set({ type: v })}
             />
           </Field>
+          {d.type === "purpose" && (
+            <>
+              <p className="hint" style={{ margin: "-4px 0 8px" }}>
+                A single collection for one person or cause — a wedding, a
+                burial, medical bills. Everyone pays once; the pot goes to the
+                organiser to disburse, then the circle closes.
+              </p>
+              <Field label="What's it for">
+                <input
+                  value={d.blurb}
+                  placeholder="e.g. Ada's wedding contribution"
+                  onChange={(e) => set({ blurb: e.target.value })}
+                />
+              </Field>
+            </>
+          )}
           <Field label={"Members — " + d.maxSize + " people"}>
             <input
               type="range"
@@ -103,19 +120,25 @@ export function CircleSheet() {
               onChange={(e) => set({ maxSize: Number(e.target.value) })}
             />
           </Field>
-          <Field label="Amount each, per turn">
+          <Field
+            label={
+              d.type === "purpose" ? "Amount each (one-time)" : "Amount each, per turn"
+            }
+          >
             <MoneyInput value={d.amount || ""} onChange={(v) => set({ amount: v })} />
           </Field>
-          <Field label="Frequency">
-            <Seg
-              options={[
-                ["weekly", "Weekly"],
-                ["monthly", "Monthly"],
-              ]}
-              value={d.cadence}
-              onChange={(v) => set({ cadence: v })}
-            />
-          </Field>
+          {d.type !== "purpose" && (
+            <Field label="Frequency">
+              <Seg
+                options={[
+                  ["weekly", "Weekly"],
+                  ["monthly", "Monthly"],
+                ]}
+                value={d.cadence}
+                onChange={(v) => set({ cadence: v })}
+              />
+            </Field>
+          )}
           {d.amount > 2_000_000 && d.amount <= 20_000_000 && (
             <div className="warn-box" style={{ marginTop: 4 }}>
               Large: each member pays {fmt(d.amount)} per{" "}
@@ -133,6 +156,8 @@ export function CircleSheet() {
             onClick={() => {
               if (!d.name.trim() || d.amount <= 0)
                 return toast("Name and amount needed");
+              if (d.type === "purpose" && !d.blurb.trim())
+                return toast("Say what the collection is for");
               if (d.amount > 20_000_000)
                 return toast("Contribution is over the ₦20,000,000 cap.");
               setStep(2);
@@ -146,27 +171,34 @@ export function CircleSheet() {
       {step === 2 && (
         <>
           <p className="hint" style={{ marginBottom: 4 }}>
-            Step 2 of 3 · payout order &amp; the idle pot
+            Step 2 of 3 · {d.type === "purpose" ? "the idle pot" : "payout order & the idle pot"}
           </p>
-          <div className="radio-list">
-            {(
-              [
-                ["join", "By the order people join"],
-                ["random", "Random draw when the circle fills"],
-                ["need", "Members state need / bid each cycle"],
-              ] as [string, string][]
-            ).map(([v, l]) => (
-              <label key={v}>
-                <input
-                  type="radio"
-                  name="ord"
-                  checked={d.payoutOrder === v}
-                  onChange={() => set({ payoutOrder: v })}
-                />
-                {l}
-              </label>
-            ))}
-          </div>
+          {d.type === "purpose" ? (
+            <p className="hint" style={{ marginBottom: 12 }}>
+              The whole pot goes to you (the organiser) once everyone has paid,
+              to pass on for <b>{d.blurb || "the stated purpose"}</b>.
+            </p>
+          ) : (
+            <div className="radio-list">
+              {(
+                [
+                  ["join", "By the order people join"],
+                  ["random", "Random draw when the circle fills"],
+                  ["need", "Members state need / bid each cycle"],
+                ] as [string, string][]
+              ).map(([v, l]) => (
+                <label key={v}>
+                  <input
+                    type="radio"
+                    name="ord"
+                    checked={d.payoutOrder === v}
+                    onChange={() => set({ payoutOrder: v })}
+                  />
+                  {l}
+                </label>
+              ))}
+            </div>
+          )}
           <Field label="Between payouts">
             <div className="radio-list" style={{ marginTop: 0 }}>
               <label>
@@ -223,20 +255,33 @@ export function CircleSheet() {
           </p>
           <div className="review">
             <div className="headline">
-              {d.maxSize} people × {fmt(d.amount)} / {d.cadence === "weekly" ? "week" : "month"}
+              {d.maxSize} people ×{" "}
+              {d.type === "purpose"
+                ? fmt(d.amount) + " once"
+                : fmt(d.amount) + " / " + (d.cadence === "weekly" ? "week" : "month")}
             </div>
             <div className="rrow">
               <span className="rl">Name</span>
               <span className="rv">{d.name || "Untitled circle"}</span>
             </div>
+            {d.type === "purpose" && (
+              <div className="rrow">
+                <span className="rl">For</span>
+                <span className="rv">{d.blurb || "—"}</span>
+              </div>
+            )}
             <div className="rrow">
-              <span className="rl">Pot each turn</span>
+              <span className="rl">{d.type === "purpose" ? "Total pot" : "Pot each turn"}</span>
               <span className="rv">{fmt(pot)}</span>
             </div>
             <div className="rrow">
-              <span className="rl">Payout order</span>
+              <span className="rl">{d.type === "purpose" ? "Goes to" : "Payout order"}</span>
               <span className="rv">
-                {{ join: "Join order", random: "Random draw", need: "By need / bid" }[d.payoutOrder]}
+                {d.type === "purpose"
+                  ? "Organiser, to disburse"
+                  : { join: "Join order", random: "Random draw", need: "By need / bid" }[
+                      d.payoutOrder
+                    ]}
               </span>
             </div>
             <div className="rrow">

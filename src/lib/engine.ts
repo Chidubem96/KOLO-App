@@ -254,7 +254,10 @@ export function goalRunRate(g: Goal): number {
 }
 
 /* ---------- circle math ---------- */
+export const PURPOSE_WINDOW_DAYS = 30; // one-off collections run for a month
+
 export function circleCycleIndex(c: CircleFull): number {
+  if (c.type === "purpose") return 0; // one-off collection — a single cycle
   const start = D(c.startDate);
   const now = todayD();
   if (c.cadence === "weekly")
@@ -266,6 +269,8 @@ export function circleCycleIndex(c: CircleFull): number {
   );
 }
 export function circleCycleDue(c: CircleFull, idx: number): Date {
+  if (c.type === "purpose")
+    return addDays(c.startDate, PURPOSE_WINDOW_DAYS);
   if (c.cadence === "weekly") return addDays(c.startDate, idx * 7);
   const start = D(c.startDate);
   return new Date(
@@ -788,6 +793,9 @@ export function circlePot(c: { amount: number; members: unknown[] }) {
 }
 export function payoutRecipient(c: CircleFull, cycleIdx: number) {
   if (!c.members.length) return null;
+  if (c.type === "purpose")
+    // the whole pot goes to the organiser, who disburses it for the stated purpose
+    return c.members.find((m) => m.userId === c.createdBy) || c.members[0];
   const slot = (cycleIdx % c.members.length) + 1;
   return c.members.find((m) => m.slot === slot) || null;
 }

@@ -157,8 +157,10 @@ export function CircleDetail({ circleId }: { circleId: string }) {
       <div className="seg">
         {(
           [
-            ["cycle", "This cycle"],
-            ["rotation", "Rotation"],
+            ["cycle", c.type === "purpose" ? "Collection" : "This cycle"],
+            ...(c.type === "purpose" || c.type === "target"
+              ? []
+              : [["rotation", "Rotation"] as [Panel, string]]),
             ["activity", "Activity"],
           ] as [Panel, string][]
         ).map(([p, l]) => (
@@ -171,11 +173,18 @@ export function CircleDetail({ circleId }: { circleId: string }) {
       {panel === "cycle" && (
         <>
           <div className="pot">
-            <div className="tag">This cycle&apos;s pot</div>
+            <div className="tag">
+              {c.type === "purpose" ? "Collection total" : "This cycle's pot"}
+            </div>
             <div className="amount">{fmt(pot)}</div>
             <div className="who">
               {c.type === "target" ? (
                 <>Everyone withdraws together on payout day</>
+              ) : c.type === "purpose" ? (
+                <>
+                  For <b>{c.blurb || "the stated purpose"}</b> · held by{" "}
+                  <b>{rec ? (rec.userId === uid ? "you" : rec.name) : "the organiser"}</b>
+                </>
               ) : (
                 <>
                   Goes to <b>{rec ? (rec.userId === uid ? "You" : rec.name) : "—"}</b>
@@ -183,7 +192,9 @@ export function CircleDetail({ circleId }: { circleId: string }) {
               )}
             </div>
             <div className="when">
-              Pays out {fmtDate(due)}, once everyone has contributed
+              {c.type === "purpose"
+                ? "Closes " + fmtDate(due) + ", once everyone has paid"
+                : "Pays out " + fmtDate(due) + ", once everyone has contributed"}
             </div>
             <div className="bar">
               <i

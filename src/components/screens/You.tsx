@@ -144,7 +144,9 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
               <span className="nm">
                 {c.name}
                 <small>
-                  {fmt(c.amount)}/{c.cadence} · cycle {cur + 1}
+                  {c.type === "purpose"
+                    ? fmt(c.amount) + " one-off"
+                    : fmt(c.amount) + "/" + c.cadence + " · cycle " + (cur + 1)}
                 </small>
               </span>
               <span className={"chip " + (st.paid ? "paid" : st.late ? "missed" : "due")}>

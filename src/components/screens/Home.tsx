@@ -272,6 +272,8 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
                 <div className="hint" style={{ margin: "3px 0 9px" }}>
                   {c.type === "target"
                     ? "Target save · unlocks together"
+                    : c.type === "purpose"
+                    ? "One-off · " + (c.blurb || "collection")
                     : (rec ? rec.name : "—") + " receives this cycle"}
                   {" · "}
                   {paidCount}/{c.members.length} paid

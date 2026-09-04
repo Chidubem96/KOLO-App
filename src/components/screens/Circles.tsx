@@ -151,8 +151,10 @@ export function Circles() {
               <span className="chip neutral">{c.type}</span>
             </div>
             <p className="hint" style={{ margin: "4px 0 10px" }}>
-              {fmt(c.amount)} / {c.cadence} · {c.members.length} members · pot{" "}
-              {fmt(circlePot(c))} · code {c.code}
+              {c.type === "purpose"
+                ? fmt(c.amount) + " one-off"
+                : fmt(c.amount) + " / " + c.cadence}{" "}
+              · {c.members.length} members · pot {fmt(circlePot(c))} · code {c.code}
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <span className={"chip " + (paidCount === c.members.length ? "paid" : "due")}>
