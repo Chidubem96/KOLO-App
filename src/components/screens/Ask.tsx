@@ -33,6 +33,7 @@ interface Msg {
   text: string;
   assume?: string;
   flagged?: boolean;
+  rejected?: string;
   action?: GoalAction;
 }
 
@@ -69,9 +70,17 @@ export function Ask() {
         body: JSON.stringify({ question: q, context: ctx }),
       });
       const j = await res.json();
+      if (j.debug_rejected)
+        // eslint-disable-next-line no-console
+        console.warn("[Ask Kolo] guard rejected token:", j.debug_rejected, "| Q:", q);
       logEvent(
         "ask_kolo",
-        { chars: q.length, flagged: !!j.flagged, fallback: !j.answer },
+        {
+          chars: q.length,
+          flagged: !!j.flagged,
+          fallback: !j.answer,
+          rejected: j.debug_rejected || undefined,
+        },
         "Ask"
       );
       setMsgs((m) => [
@@ -81,6 +90,7 @@ export function Ask() {
           text: j.answer || deterministicFallback(ctx, q),
           assume,
           flagged: !!j.flagged,
+          rejected: j.debug_rejected,
           action:
             j.action && j.action.kind === "new_goal" ? j.action : undefined,
         },
@@ -131,6 +141,14 @@ export function Ask() {
                 <div className="ask-flag">
                   ⚑ Kolo&apos;s phrasing used a figure the engine couldn&apos;t
                   verify, so the answer above is the engine&apos;s own read.
+                  {m.rejected && (
+                    <>
+                      {" "}
+                      <span style={{ fontFamily: "var(--f-mono)", opacity: 0.8 }}>
+                        (rejected: &ldquo;{m.rejected}&rdquo;)
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
               {m.action && (
