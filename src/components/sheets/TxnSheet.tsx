@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
-import { addObligation, addTxns } from "@/lib/api";
+import { addObligation, addTxns, saveProfile } from "@/lib/api";
 import { logEvent } from "@/lib/events";
 import {
   CATS,
@@ -11,7 +11,7 @@ import {
   parseAlerts,
   parseCSV,
 } from "@/lib/engine";
-import { addDays, daysAgo, iso, parseMoney, todayD, todayStr } from "@/lib/format";
+import { addDays, daysAgo, fmt, iso, parseMoney, todayD, todayStr } from "@/lib/format";
 import { CatSelect, Field, MoneyInput, Sheet } from "../ui";
 import type { DraftTxn } from "@/lib/types";
 
@@ -199,11 +199,12 @@ const dkey = (d: { amount: number; date: string; note: string }) =>
   d.amount + "|" + d.date + "|" + (d.note || "").toLowerCase().slice(0, 24);
 
 function PasteForm() {
-  const { data } = useKolo();
+  const { data, reload, toast } = useKolo();
   const [text, setText] = useState("");
   const [status, setStatus] = useState("");
   const [drafts, setDrafts] = useState<DraftTxn[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [salaryHint, setSalaryHint] = useState<{ day: number; amount: number } | null>(null);
 
   const parse = async () => {
     const raw = text.trim();
@@ -312,6 +313,26 @@ function PasteForm() {
     }
     setStatus(parts.join(". ") + ".");
     setDrafts(ds.length ? ds : null); // no empty review list
+
+    // learn payday: a credit that matches the stated income (±25%), or any
+    // large credit, is probably salary — offer to set the payday from its date
+    const inc = data?.profile.incomeAmount || 0;
+    const credit = rows
+      .filter((r: any) => isNgn(r) && r.direction === "credit" && Number(r.amount) > 0)
+      .map((r: any) => ({
+        amount: Math.round(Number(r.amount)),
+        date:
+          typeof r.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.date)
+            ? r.date
+            : null,
+      }))
+      .filter((c: any) => c.date && (inc ? Math.abs(c.amount - inc) <= inc * 0.25 : c.amount >= 50000))
+      .sort((a: any, b: any) => b.amount - a.amount)[0];
+    if (credit) {
+      const day = new Date(credit.date + "T12:00:00").getDate();
+      if (day !== data?.profile.incomeDay) setSalaryHint({ day, amount: credit.amount });
+      else setSalaryHint(null);
+    } else setSalaryHint(null);
   };
 
   return (
@@ -335,6 +356,37 @@ function PasteForm() {
       {status && (
         <div className="hint" style={{ margin: "10px 0" }}>
           {status}
+        </div>
+      )}
+      {salaryHint && (
+        <div className="card" style={{ margin: "10px 0", borderColor: "rgba(53,211,153,.35)" }}>
+          <p className="kicker" style={{ color: "var(--pos)", marginBottom: 6 }}>
+            Salary credit spotted
+          </p>
+          <p className="hint" style={{ marginBottom: 10 }}>
+            A {fmt(salaryHint.amount)} credit landed on the {salaryHint.day}
+            {salaryHint.day === 1 ? "st" : salaryHint.day === 2 ? "nd" : salaryHint.day === 3 ? "rd" : "th"}.
+            Set that as your payday? Safe-to-Spend counts down to it.
+          </p>
+          <div className="btnrow">
+            <button
+              className="btn sm"
+              onClick={async () => {
+                await saveProfile(data!.userId, {
+                  income_day: salaryHint.day,
+                  salary_day: salaryHint.day,
+                });
+                setSalaryHint(null);
+                toast("Payday set to the " + salaryHint.day + "th");
+                reload();
+              }}
+            >
+              Set payday
+            </button>
+            <button className="btn sm ghost" onClick={() => setSalaryHint(null)}>
+              Not salary
+            </button>
+          </div>
         </div>
       )}
       {drafts && <DraftReview drafts={drafts} via="paste" />}
