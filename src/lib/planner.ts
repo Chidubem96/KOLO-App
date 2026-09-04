@@ -2,7 +2,7 @@
    Every figure a planning answer needs is computed HERE, deterministically,
    so the adviser model can narrate it without tripping the numeral guardrail. */
 import { catLabel, isDisc, monthlyRollups } from "./engine";
-import { daysAgo } from "./format";
+import { daysAgo, iso } from "./format";
 import type { KoloData } from "./types";
 
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
@@ -57,10 +57,14 @@ const MONTHS = [
   "july", "august", "september", "october", "november", "december",
 ];
 
-/** Pull a target amount and a horizon (in months) out of a free-text question. */
+const STOP_LABEL =
+  /\b(by|in|before|come|this|next|within|over|for|so|and|to|month|months|year|years|week|weeks|day|days)\b.*$/i;
+
+/** Pull a target amount, a horizon (months) and a label out of a free-text question. */
 export function parsePlanRequest(q: string): {
   target: number | null;
   months: number | null;
+  label: string | null;
 } {
   const text = " " + q.toLowerCase().replace(/,/g, "") + " ";
 
@@ -107,19 +111,31 @@ export function parsePlanRequest(q: string): {
     }
   }
 
-  return { target, months };
+  // ---- label ("... for a vacation by December" -> "vacation") ----
+  let label: string | null = null;
+  const lm = q.match(
+    /(?:sav(?:e|ing)\s+(?:up\s+)?(?:for|toward|towards)|toward|towards|for)\s+(?:a |an |my |the |some )?([A-Za-z][A-Za-z '-]{2,32})/i
+  );
+  if (lm) {
+    const cleaned = lm[1].replace(STOP_LABEL, "").trim();
+    if (cleaned.length >= 3) label = cleaned;
+  }
+
+  return { target, months, label };
 }
 
 /** Turn a parsed request into a concrete sinking-fund plan. */
 export function planForTarget(
   d: KoloData,
   target: number | null,
-  months: number | null
+  months: number | null,
+  label?: string | null
 ) {
   if (!target) return null;
   const roll = monthlyRollups(d);
   const capacity = Math.max(0, roll.surplus);
   const disc = discretionaryByCategory(d);
+  const goalName = (label || "vacation").replace(/^./, (c) => c.toUpperCase());
 
   const out: Record<string, unknown> = {
     target,
@@ -128,6 +144,9 @@ export function planForTarget(
 
   if (months && months > 0) {
     const required = Math.ceil(target / months);
+    const deadline = new Date();
+    deadline.setDate(1);
+    deadline.setMonth(deadline.getMonth() + months);
     out.months = months;
     out.required_monthly = required;
     out.covered_by_unallocated = capacity >= required;
@@ -135,6 +154,14 @@ export function planForTarget(
     if (required > capacity && disc.length) {
       out.trim_candidates = disc.slice(0, 4);
     }
+    // engine-built spec the UI turns into a pre-filled "New goal" sheet
+    out.suggested_goal = {
+      name: goalName,
+      target,
+      deadline_iso: iso(deadline),
+      monthly: required,
+      priority: 1,
+    };
   } else {
     out.months_at_current_pace =
       capacity > 0 ? Math.ceil(target / capacity) : null;

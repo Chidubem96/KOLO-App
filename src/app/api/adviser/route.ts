@@ -23,6 +23,21 @@ export async function POST(req: NextRequest) {
   const context = body.context ?? {};
   if (!question) return NextResponse.json({ error: "no question" }, { status: 400 });
 
+  // engine-built action the client turns into a pre-filled "New goal" sheet.
+  // Every field here comes from Kolo's deterministic planner, never the model.
+  const sg = (context as any)?.planning_request?.suggested_goal;
+  const action =
+    sg && typeof sg.target === "number" && sg.deadline_iso
+      ? {
+          kind: "new_goal" as const,
+          name: String(sg.name || "Vacation"),
+          target: Math.round(sg.target),
+          deadline: String(sg.deadline_iso),
+          monthly: Math.round(sg.monthly || 0),
+          priority: 1,
+        }
+      : undefined;
+
   const anthropic = new Anthropic({ apiKey: key });
   try {
     const msg = await anthropic.messages.create({
@@ -43,7 +58,7 @@ export async function POST(req: NextRequest) {
     } as any);
 
     if (msg.stop_reason === "refusal")
-      return NextResponse.json({ answer: deterministicAnswer(context), flagged: false });
+      return NextResponse.json({ answer: deterministicAnswer(context), flagged: false, action });
 
     const text = (msg.content as any[])
       .filter((b) => b.type === "text")
@@ -52,18 +67,19 @@ export async function POST(req: NextRequest) {
       .trim();
 
     if (!text)
-      return NextResponse.json({ answer: deterministicAnswer(context), flagged: false });
+      return NextResponse.json({ answer: deterministicAnswer(context), flagged: false, action });
 
     const check = enforce(text, context, question);
     return NextResponse.json(
       check.ok
-        ? { answer: text, flagged: false }
-        : { answer: deterministicAnswer(context), flagged: true }
+        ? { answer: text, flagged: false, action }
+        : { answer: deterministicAnswer(context), flagged: true, action }
     );
   } catch (e: any) {
     return NextResponse.json({
       answer: deterministicAnswer(context),
       flagged: false,
+      action,
       error: String(e?.message || e),
     });
   }

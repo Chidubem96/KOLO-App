@@ -75,6 +75,7 @@ HOW TO ANSWER:
   (a) the amount to set aside each period — use context.planning_request.required_monthly when present; if the request has no target or no date, ask for the missing piece per rule 1;
   (b) where it comes from — context.budget_frame.unallocated_each_month first; if that is short of the required amount, point at the biggest one or two lines in context.discretionary_by_category to trim, and by how much (context.planning_request.monthly_shortfall);
   (c) the exact steps in Kolo to lock it in.
+- If context.planning_request.suggested_goal is present, a button that creates that goal (pre-filled, priority High) is shown under your answer. Tell the user to tap it — one sentence, e.g. "Tap Create goal below and Kolo will hold that amount aside every month." Do not re-list all the numbers; the button carries them.
 - Kolo's tools, by name: Goals (create one and set its priority High so Safe-to-Spend reserves the monthly amount before it shows as spendable); Obligations (fixed monthly commitments); circle auto-debit (a rotating circle is forced monthly saving); the volatility-buffer slider in Settings.
 - Frameworks to reach for when they fit: pay-yourself-first (move the savings amount the day income lands), 50/30/20 (context.budget_frame has the split and the guide), one sinking-fund Goal per lump-sum target.
 - If the target is not realistic on the current numbers, say so plainly and name the single change that makes it work.

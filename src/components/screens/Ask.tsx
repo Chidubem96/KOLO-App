@@ -1,15 +1,28 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useKolo } from "@/lib/store";
+import { useSheet } from "../sheet-context";
 import { buildAskContext, assumeLine } from "@/lib/askContext";
 import { deterministicAnswer } from "@/lib/adviser";
 import { logEvent } from "@/lib/events";
+import { fmt } from "@/lib/format";
+import { GoalSheet } from "../sheets/GoalSheet";
+
+interface GoalAction {
+  kind: "new_goal";
+  name: string;
+  target: number;
+  deadline: string;
+  monthly: number;
+  priority: number;
+}
 
 interface Msg {
   role: "user" | "kolo";
   text: string;
   assume?: string;
   flagged?: boolean;
+  action?: GoalAction;
 }
 
 const SUGGESTIONS = [
@@ -23,6 +36,7 @@ const SUGGESTIONS = [
 export function Ask() {
   const { data } = useKolo();
   const d = data!;
+  const sheet = useSheet();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -56,6 +70,8 @@ export function Ask() {
           text: j.answer || deterministicAnswer(ctx),
           assume,
           flagged: !!j.flagged,
+          action:
+            j.action && j.action.kind === "new_goal" ? j.action : undefined,
         },
       ]);
     } catch {
@@ -104,6 +120,32 @@ export function Ask() {
                   ⚑ Kolo&apos;s phrasing used a figure the engine couldn&apos;t
                   verify, so the answer above is the engine&apos;s own read.
                 </div>
+              )}
+              {m.action && (
+                <button
+                  className="btn sm gold"
+                  style={{ marginTop: 8 }}
+                  onClick={() => {
+                    logEvent(
+                      "adviser_action_tapped",
+                      { kind: m.action!.kind, target: m.action!.target },
+                      "Ask"
+                    );
+                    sheet.open(
+                      <GoalSheet
+                        prefill={{
+                          name: m.action!.name,
+                          target: m.action!.target,
+                          deadline: m.action!.deadline,
+                          priority: m.action!.priority,
+                        }}
+                      />
+                    );
+                  }}
+                >
+                  ＋ Create “{m.action.name}” goal ·{" "}
+                  {fmt(m.action.monthly)}/mo
+                </button>
               )}
             </div>
           ))

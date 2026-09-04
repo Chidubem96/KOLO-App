@@ -85,8 +85,8 @@ export function buildAskContext(d: KoloData, question?: string) {
   } as Record<string, unknown>;
 
   if (question) {
-    const { target, months } = parsePlanRequest(question);
-    const plan = planForTarget(d, target, months);
+    const { target, months, label } = parsePlanRequest(question);
+    const plan = planForTarget(d, target, months, label);
     if (plan) ctx.planning_request = plan;
   }
 

@@ -7,14 +7,27 @@ import { logEvent } from "@/lib/events";
 import { addMonths, iso } from "@/lib/format";
 import { Field, MoneyInput, Seg, Sheet } from "../ui";
 
-export function GoalSheet() {
+export function GoalSheet({
+  prefill,
+}: {
+  prefill?: {
+    name?: string;
+    target?: number;
+    deadline?: string;
+    priority?: number;
+  };
+}) {
   const { data, reload } = useKolo();
   const { close } = useSheet();
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState(0);
+  const [name, setName] = useState(prefill?.name || "");
+  const [target, setTarget] = useState(prefill?.target || 0);
   const [saved, setSaved] = useState(0);
-  const [deadline, setDeadline] = useState(iso(addMonths(new Date(), 12)));
-  const [priority, setPriority] = useState<"1" | "2" | "3">("2");
+  const [deadline, setDeadline] = useState(
+    prefill?.deadline || iso(addMonths(new Date(), 12))
+  );
+  const [priority, setPriority] = useState<"1" | "2" | "3">(
+    prefill?.priority ? (String(prefill.priority) as "1" | "2" | "3") : "2"
+  );
 
   return (
     <Sheet title="New goal" onClose={close}>
@@ -67,6 +80,7 @@ export function GoalSheet() {
             target,
             saved,
             priority: Number(priority),
+            from_adviser: !!prefill,
           });
           await reload();
           close();
