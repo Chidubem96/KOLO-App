@@ -373,7 +373,10 @@ export function monthlyRollups(d: KoloData) {
   const span = spend90.length
     ? clamp(daysAgo([...spend90].sort((a, b) => a.date.localeCompare(b.date))[0].date), 7, 90)
     : 30;
-  const scale = 30 / span;
+  // Under ~3 weeks or fewer than 6 entries: don't annualise a thin window —
+  // one new transaction shouldn't swing the monthly headline 5×.
+  const provisional = span < 21 || spend90.length < 6;
+  const scale = provisional ? 1 : 30 / span;
   const disc = sum(spend90.filter((t) => isDisc(t.category)).map((t) => t.amount)) * scale;
   const committedTx = sum(spend90.filter((t) => !isDisc(t.category)).map((t) => t.amount)) * scale;
   const income =
@@ -393,6 +396,8 @@ export function monthlyRollups(d: KoloData) {
     committed: Math.round(committed),
     goalsMonthly: Math.round(goalsMonthly),
     surplus: Math.round(income - committed - disc - goalsMonthly),
+    provisional,
+    spendDays: Math.round(span),
   };
 }
 

@@ -85,11 +85,22 @@ export async function POST(req: NextRequest) {
       });
 
     const check = enforce(text, context, question);
-    return NextResponse.json(
-      check.ok
-        ? { answer: text, flagged: false, action }
-        : { answer: deterministicFallback(context, question), flagged: true, action }
-    );
+    if (!check.ok) {
+      // log what was rejected so a false positive is visible, not silent
+      console.warn(
+        "[adviser] numeral guard rejected token:",
+        (check as any).bad,
+        "| question:",
+        question.slice(0, 120)
+      );
+      return NextResponse.json({
+        answer: deterministicFallback(context, question),
+        flagged: true,
+        action,
+        debug_rejected: (check as any).bad,
+      });
+    }
+    return NextResponse.json({ answer: text, flagged: false, action });
   } catch (e: any) {
     return NextResponse.json({
       answer: deterministicFallback(context, question),

@@ -29,7 +29,7 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
   const verify = async (field: string, label: string) => {
     await saveProfile(d.userId, { [field]: true });
     logEvent("identity_verified", { field }, "You");
-    toast(label + " verified");
+    toast(label + " marked verified (demo)");
     reload();
   };
 
@@ -63,6 +63,9 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
       </div>
 
       <div className="section-label">Identity</div>
+      <p className="hint" style={{ margin: "0 0 8px" }}>
+        Demo only — no real BVN / NIN / selfie check is wired in this test build.
+      </p>
       <div className="card tight">
         {[
           ["bvn_verified", p.bvnVerified, "BVN"],
@@ -72,13 +75,13 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
           <div key={label as string} className="kv">
             <span className="lab">{label as string}</span>
             {ok ? (
-              <span className="verified">Verified ✓</span>
+              <span className="verified">Verified (demo)</span>
             ) : (
               <button
                 className="btn sm ghost"
                 onClick={() => verify(field as string, label as string)}
               >
-                Verify
+                Simulate
               </button>
             )}
           </div>
@@ -94,7 +97,10 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
           <div className="grow">
             <div className="t">Spending & obligations</div>
             <div className="s">
-              {fmt(roll.discretionary + roll.committed)} / mo · auto-logging
+              {roll.provisional
+                ? fmt(roll.discretionary + roll.committed) +
+                  " so far · too little history for a monthly rate"
+                : fmt(roll.discretionary + roll.committed) + " / mo · auto-logging"}
             </div>
           </div>
           <span className="chev">{Icon.chev}</span>

@@ -579,11 +579,27 @@ export async function leaveCircle(circleId: string, userId: string) {
     .eq("circle_id", circleId)
     .eq("user_id", userId);
 }
-export async function deleteCircle(circleId: string) {
+export async function deleteCircle(
+  circleId: string
+): Promise<"deleted" | "left"> {
   // organiser only (RLS: "organiser deletes circle"); members / contributions
   // / requests / disputes cascade on delete.
-  const { error } = await supabase().from("circles").delete().eq("id", circleId);
+  const sb = supabase();
+  const { data, error } = await sb
+    .from("circles")
+    .delete()
+    .eq("id", circleId)
+    .select("id");
   if (error) throw error;
+  if (data && data.length > 0) return "deleted";
+  // RLS matched no row (not the organiser): remove our own membership instead
+  const uid = (await sb.auth.getUser()).data.user?.id ?? "";
+  await sb
+    .from("circle_members")
+    .delete()
+    .eq("circle_id", circleId)
+    .eq("user_id", uid);
+  return "left";
 }
 export async function setMemberAutoDebit(
   circleId: string,

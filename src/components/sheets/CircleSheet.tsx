@@ -116,28 +116,25 @@ export function CircleSheet() {
               onChange={(v) => set({ cadence: v })}
             />
           </Field>
+          {d.amount > 2_000_000 && d.amount <= 20_000_000 && (
+            <div className="warn-box" style={{ marginTop: 4 }}>
+              Large: each member pays {fmt(d.amount)} per{" "}
+              {d.cadence === "weekly" ? "week" : "month"} — a {fmt(d.amount * d.maxSize)}{" "}
+              pot. Double-check the amount before you continue.
+            </div>
+          )}
+          {d.amount > 20_000_000 && (
+            <div className="warn-box red" style={{ marginTop: 4 }}>
+              Over the ₦20,000,000 per-turn cap. Lower the amount to continue.
+            </div>
+          )}
           <button
             className="btn full"
             onClick={() => {
               if (!d.name.trim() || d.amount <= 0)
                 return toast("Name and amount needed");
               if (d.amount > 20_000_000)
-                return toast(
-                  "That contribution looks too large — cap is ₦20,000,000 per turn."
-                );
-              if (
-                d.amount > 2_000_000 &&
-                !confirm(
-                  "Each member pays " +
-                    fmt(d.amount) +
-                    " per " +
-                    (d.cadence === "weekly" ? "week" : "month") +
-                    ". That's a " +
-                    fmt(d.amount * d.maxSize) +
-                    " pot. Is that right?"
-                )
-              )
-                return;
+                return toast("Contribution is over the ₦20,000,000 cap.");
               setStep(2);
             }}
           >

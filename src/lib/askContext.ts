@@ -1,4 +1,5 @@
 import {
+  catLabel,
   circleContribStatus,
   circleCycleIndex,
   goalRunRate,
@@ -6,6 +7,7 @@ import {
   myReliability,
   safeToSpend,
 } from "./engine";
+import { daysAgo } from "./format";
 import {
   budgetFrame,
   discretionaryByCategory,
@@ -38,6 +40,32 @@ export function buildAskContext(d: KoloData, question?: string) {
       paused: g.paused,
     };
   });
+
+  // actual spend per category over the last 30 days — NOT annualised, so the
+  // adviser can answer "how much did I send home this month?" from real figures
+  const byCat: Record<string, number> = {};
+  d.transactions
+    .filter((t) => t.category && daysAgo(t.date) >= 0 && daysAgo(t.date) <= 30)
+    .forEach((t) => {
+      byCat[t.category as string] = (byCat[t.category as string] || 0) + t.amount;
+    });
+  const spending_by_category = Object.entries(byCat)
+    .map(([id, amt]) => ({ category: catLabel(id), this_month: Math.round(amt) }))
+    .sort((a, b) => b.this_month - a.this_month);
+
+  const obligations = d.obligations
+    .filter((o) => o.active)
+    .map((o) => ({
+      label: o.label,
+      amount: o.amount,
+      cadence: o.cadence,
+      category: catLabel(o.category),
+    }));
+
+  const fmtSigned = (n: number) =>
+    (n < 0 ? "−₦" : "₦") + Math.abs(Math.round(n)).toLocaleString("en-NG");
+  const fmtPos = (n: number) =>
+    "₦" + Math.abs(Math.round(n)).toLocaleString("en-NG");
 
   const circles = d.circles.map((c) => {
     const cur = circleCycleIndex(c);
@@ -77,13 +105,24 @@ export function buildAskContext(d: KoloData, question?: string) {
       discretionary_spending: roll.discretionary,
       goal_accruals: roll.goalsMonthly,
       surplus: roll.surplus,
+      is_provisional: roll.provisional,
+      based_on_days: roll.spendDays,
     },
     goals,
     circles,
+    obligations,
+    spending_by_category,
+    spending_window_days: 30,
     reliability_score: rel.score,
     reliability_rated: rel.rated,
     budget_frame: budgetFrame(d),
     discretionary_by_category: discretionaryByCategory(d).slice(0, 6),
+    // pre-formatted, correctly-signed strings — quote these verbatim
+    display: {
+      safe_to_spend: fmtSigned(r.sts),
+      available_liquid_balance: fmtPos(r.availableLiquid),
+      volatility_buffer: fmtPos(r.buffer.value),
+    },
     assumptions: {
       salary_lands_on_day: d.profile.salaryDay,
       rent_monthly: d.profile.rent,

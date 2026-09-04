@@ -59,6 +59,9 @@ function ManualForm() {
   const [note, setNote] = useState("");
   const [date, setDate] = useState(todayStr());
   const [person, setPerson] = useState(false);
+  const [recurring, setRecurring] = useState(false);
+  const oblish =
+    person || ["home", "rent", "levy", "school", "faith"].includes(category);
 
   return (
     <div>
@@ -110,6 +113,25 @@ function ManualForm() {
         />
         This went to a person (not a shop)
       </label>
+      {oblish && (
+        <label
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            fontSize: 13,
+            color: "var(--mut)",
+            margin: "-6px 0 14px",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={recurring}
+            onChange={(e) => setRecurring(e.target.checked)}
+          />
+          This repeats every month — track it as an obligation
+        </label>
+      )}
       <button
         className="btn block"
         onClick={async () => {
@@ -127,6 +149,20 @@ function ManualForm() {
             },
           ]);
           logEvent("txn_logged", { count: 1, via: "manual", category }, "Money");
+          if (recurring)
+            await addObligation(data!.userId, {
+              label: note.trim() || (person ? "Monthly transfer" : "Monthly bill"),
+              kind: person ? "transfer" : "bill",
+              amount,
+              cadence: "monthly",
+              anchorDay: new Date(date).getDate() || 1,
+              active: true,
+              source: "confirmed",
+              category: category || (person ? "home" : "rent"),
+              autoPost: false,
+              since: todayStr(),
+              sig: null,
+            });
           await reload();
           close();
         }}
@@ -206,21 +242,20 @@ function PasteForm() {
     }
     setBusy(false);
 
+    const isNgn = (r: any) =>
+      !r.currency || String(r.currency).toUpperCase() === "NGN";
+
     // 1. foreign currency — never coerced into naira
-    const fxRows = rows.filter(
-      (r: any) => r.currency && String(r.currency).toUpperCase() !== "NGN"
-    );
-    // 2. couldn't read an amount at all
+    const fxRows = rows.filter((r: any) => !isNgn(r));
+    // 2. an alert we could read at all but with no usable naira amount
     const blankRows = rows.filter(
-      (r: any) => !r.currency && !(Number(r.amount) > 0)
+      (r: any) => isNgn(r) && !(Number(r.amount) > 0)
     );
     // 3. usable naira debits that actually appear in the pasted text
     let ds = rows
       .filter(
         (r: any) =>
-          !r.currency &&
-          Number(r.amount) > 0 &&
-          r.direction !== "credit"
+          isNgn(r) && Number(r.amount) > 0 && r.direction !== "credit"
       )
       .map(normalizeDraft)
       .filter((d) => d.amount > 0 && amountInSource(d.amount, raw));
@@ -276,7 +311,7 @@ function PasteForm() {
       );
     }
     setStatus(parts.join(". ") + ".");
-    setDrafts(ds.length ? ds : []);
+    setDrafts(ds.length ? ds : null); // no empty review list
   };
 
   return (

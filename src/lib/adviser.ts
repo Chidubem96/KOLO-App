@@ -3,13 +3,14 @@
    (or the question) fails the message. Shared by client + API route. */
 
 export function normNum(s: string): string {
-  let t = String(s).replace(/[₦,\s]/g, "");
+  // strip currency, separators AND sign — "−₦45,000" and "45000" are the same figure
+  let t = String(s).replace(/[₦,\s−–-]/g, "");
   const suf = t.match(/([kmKM])$/);
   t = t.replace(/[kmKM]$/, "");
   const n = parseFloat(t);
-  if (!isFinite(n)) return String(s).replace(/[₦,\s]/g, "");
+  if (!isFinite(n)) return String(s).replace(/[₦,\s−–-]/g, "");
   const mult = suf ? (suf[1].toLowerCase() === "k" ? 1000 : 1000000) : 1;
-  return String(Math.round(n * mult));
+  return String(Math.abs(Math.round(n * mult)));
 }
 
 export function allowedNumbers(ctx: unknown): Set<string> {
@@ -69,8 +70,8 @@ export function enforce(
 export const ASK_RULES = `You are Kolo, a personal-finance assistant for a user in Nigeria. Below is a JSON object of figures ALREADY COMPUTED by Kolo's deterministic engine, then the user's question.
 
 HARD RULES — breaking any one fails the answer:
-1. Never state a naira amount or large number that is not already in the CONTEXT JSON or the user's question. Do not add, subtract, multiply or divide to make a new figure. Quote money figures exactly as they appear in context — do not round, truncate or "tidy" them. If you ever shorten a figure (e.g. write ₦1,000,000,000,000 for ₦999,999,999,999), you MUST prefix it with "about" or "~". Small counts ("3 months", "8 members") are fine. If a good answer needs a figure you were not given, say exactly what Kolo needs to work it out.
-2. State the assumptions the answer rests on (context.assumptions) and invite the user to correct them.
+1. Never state a naira amount or large number that is not already in the CONTEXT JSON or the user's question. Do not add, subtract, multiply or divide to make a new figure. Quote money figures exactly as they appear in context — do not round, truncate or "tidy" them, and where context.display gives a ready string for a figure, use that string verbatim (it carries the correct sign). If you ever shorten a figure (e.g. write ₦1,000,000,000,000 for ₦999,999,999,999), you MUST prefix it with "about" or "~". Small counts ("3 months", "8 members") are fine. Common figures the user asks about: spend per category this month is in context.spending_by_category; their fixed commitments are in context.obligations; each circle's contribution is in context.circles[].amount. If a good answer genuinely needs a figure that is in none of these, say exactly what Kolo needs to work it out.
+2. State the assumptions the answer rests on (context.assumptions) and invite the user to correct them. If context.monthly_pattern.is_provisional is true, say the spending figures are based on only a few days of history and will firm up.
 3. Nigerian English. Light Pidgin if the user writes Pidgin.
 4. You explain the engine's numbers. You never claim to have moved money or opened anything.
 5. The volatility buffer has exactly one setting: k = context.subtractions.buffer_k (see context.subtractions.buffer_note). Never say the buffer has a second or "stored" value, never invent a label like "1x", and never tell the user two figures disagree — there is only k.
@@ -91,8 +92,12 @@ HOW TO ANSWER:
 CONTEXT:
 `;
 
-const naira = (n: number) =>
-  "₦" + Math.round(Math.abs(Number(n) || 0)).toLocaleString("en-NG");
+/** Signed naira. A negative Safe-to-Spend MUST read as negative — the
+    deterministic message exists precisely to be trusted. */
+const naira = (n: number) => {
+  const v = Math.round(Number(n) || 0);
+  return (v < 0 ? "−₦" : "₦") + Math.abs(v).toLocaleString("en-NG");
+};
 
 /* Picked when the model's own words fail the guardrail (or it errors/refuses).
    Answers the KIND of question that was asked instead of always dumping
@@ -101,7 +106,7 @@ export function deterministicFallback(ctx: any, question: string): string {
   if (isAdviceSeeking(question)) {
     return (
       "Kolo can't tell you where to put your money or whether to go all-in — it isn't a licensed investment adviser. The plain trade-off: a higher expected return always comes with a real chance of loss, and money you'll need soon shouldn't carry that risk. Open the Grow tab to read each option's risk label, and keep your Safe to Spend (" +
-      naira(ctx?.safe_to_spend ?? 0) +
+      (ctx?.display?.safe_to_spend || naira(ctx?.safe_to_spend ?? 0)) +
       " until " +
       (ctx?.horizon_date ?? "your next income") +
       ") untouched."
@@ -164,21 +169,24 @@ export function deterministicFallback(ctx: any, question: string): string {
   }
   // Generic: the model's wording tripped the guardrail. Frame it honestly
   // rather than answering a question nobody asked.
+  const sts = ctx?.display?.safe_to_spend || naira(ctx?.safe_to_spend ?? 0);
   return (
-    "That answer used a figure Kolo couldn't trace back to your data, so here's only what the engine is certain of — your Safe to Spend is " +
-    naira(ctx.safe_to_spend) +
+    "Kolo couldn't verify part of that answer, so here's what the engine is sure of: your Safe to Spend is " +
+    sts +
     " until " +
-    ctx.horizon_date +
-    ". Ask again more specifically and Kolo will show the working."
+    (ctx?.horizon_date ?? "your next income") +
+    ". Ask about a specific figure — a category, a bill, a circle — and Kolo will quote it directly."
   );
 }
 
 export function deterministicAnswer(ctx: any): string {
   const s = ctx.subtractions;
   const f = (n: number) => "₦" + Math.round(Math.abs(n)).toLocaleString("en-NG");
+  // pre-formatted, correctly-signed string wins if the engine supplied it
+  const sts = ctx.display?.safe_to_spend || naira(ctx.safe_to_spend);
   return (
     "From the engine directly: Safe to spend is " +
-    f(ctx.safe_to_spend) +
+    sts +
     " until " +
     ctx.horizon_date +
     ". That's " +

@@ -31,6 +31,8 @@ export function CircleDetail({ circleId }: { circleId: string }) {
   const { data, reload, toast } = useKolo();
   const { open, close } = useSheet();
   const [panel, setPanel] = useState<Panel>("cycle");
+  const [armExit, setArmExit] = useState(false);
+  const [exitBusy, setExitBusy] = useState(false);
   const c = data!.circles.find((x) => x.id === circleId);
   if (!c)
     return (
@@ -483,52 +485,54 @@ export function CircleDetail({ circleId }: { circleId: string }) {
       <div className="divider" />
       {(() => {
         const sole = c.members.length <= 1;
-        const stuckOrganiser = isOrganiser && !sole;
-        if (sole || isOrganiser)
-          return (
-            <>
-              <button
-                className="btn danger full"
-                onClick={async () => {
-                  const msg = sole
-                    ? "Delete this circle? It has no other members."
-                    : "Delete this circle for all " +
-                      c.members.length +
-                      " members? This can't be undone.";
-                  if (!confirm(msg)) return;
-                  try {
-                    await deleteCircle(c.id);
-                    toast("Circle deleted");
-                    await reload();
-                    close();
-                  } catch {
-                    toast("Couldn't delete — try again");
-                  }
-                }}
-              >
-                Delete circle
-              </button>
-              {stuckOrganiser && (
-                <p className="hint" style={{ marginTop: 8 }}>
-                  You&apos;re the organiser, so you can&apos;t just leave — either
-                  delete the circle or hand it over first.
-                </p>
-              )}
-            </>
-          );
-        return (
-          <button
-            className="btn danger full"
-            onClick={async () => {
-              if (!confirm("Leave this circle?")) return;
+        const canDelete = sole || isOrganiser;
+        const label = canDelete ? "Delete circle" : "Leave circle";
+        const armedLabel = canDelete
+          ? sole
+            ? "Tap again to delete this circle"
+            : "Tap again to delete for all " + c.members.length + " members"
+          : "Tap again to leave " + c.name;
+
+        const doExit = async () => {
+          if (!armExit) {
+            setArmExit(true);
+            setTimeout(() => setArmExit(false), 4000);
+            return;
+          }
+          setExitBusy(true);
+          try {
+            if (canDelete) {
+              const r = await deleteCircle(c.id);
+              toast(r === "deleted" ? "Circle deleted" : "You've left " + c.name);
+            } else {
               await leaveCircle(c.id, uid);
               toast("You've left " + c.name);
-              await reload();
-              close();
-            }}
-          >
-            Leave circle
-          </button>
+            }
+            await reload();
+            close();
+          } catch (e: any) {
+            toast(e?.message || "Couldn't do that — try again");
+            setExitBusy(false);
+            setArmExit(false);
+          }
+        };
+
+        return (
+          <>
+            <button
+              className="btn danger full"
+              disabled={exitBusy}
+              onClick={doExit}
+            >
+              {exitBusy ? "Working…" : armExit ? armedLabel : label}
+            </button>
+            {isOrganiser && !sole && (
+              <p className="hint" style={{ marginTop: 8 }}>
+                You&apos;re the organiser — deleting removes the circle for
+                everyone. There&apos;s no partial leave.
+              </p>
+            )}
+          </>
         );
       })()}
     </Sheet>
