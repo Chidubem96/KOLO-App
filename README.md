@@ -54,7 +54,13 @@ You need three free accounts: **Supabase**, **Vercel**, **Anthropic**.
 cp .env.local.example .env.local     # then fill in the three values
 npm install
 npm run dev                          # http://localhost:3000
+npm test                             # unit tests (parser, guardrail, engine)
 ```
+
+`npm test` runs the Vitest suite in `src/lib/*.test.ts` — the paste parser
+(incl. the placeholder example), the adviser numeral guard, reliability and the
+monthly-rollup logic. GitHub Actions (`.github/workflows/test.yml`) runs it on
+every push.
 
 ### 4. Deploy to Vercel
 

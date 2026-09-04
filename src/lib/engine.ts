@@ -145,7 +145,7 @@ export function parseAlerts(text: string): RawDraft[] {
         b
       );
     const note = injectionLike
-      ? cp || "Payment"
+      ? "Payment (unreadable description)"
       : (cp
           ? (isCredit ? "From " : person ? "To " : "") + cp
           : b.slice(0, 40)
