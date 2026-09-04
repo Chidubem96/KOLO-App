@@ -79,7 +79,7 @@ export function CircleSheet() {
           <Field label="Circle name">
             <input
               value={d.name}
-              placeholder="e.g. Family August Ajo"
+              placeholder="e.g. Family August Savings Club"
               onChange={(e) => set({ name: e.target.value })}
             />
           </Field>

@@ -2,7 +2,7 @@
 
 A consumer money app for Nigeria. Shows the one honest number — **Safe to Spend** —
 with a personal ledger, goals, an alert/statement auto-logger, a guardrailed
-"Ask Kolo" assistant, and **ajo circles that sync live between friends**.
+"Ask Kolo" assistant, and **savings-club circles that sync live between friends**.
 
 - **Frontend + API:** Next.js 14 (App Router), deploy to Vercel
 - **Data + auth + realtime:** Supabase (Postgres)

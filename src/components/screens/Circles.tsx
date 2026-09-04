@@ -55,7 +55,7 @@ export function Circles() {
       <div className="scr-head">
         <div>
           <h1>Circles</h1>
-          <div className="meta">Your ajo, esusu, cooperative & family funds</div>
+          <div className="meta">Your savings clubs, cooperative & family funds</div>
         </div>
       </div>
 

@@ -870,7 +870,7 @@ export const SEED_DISCOVER = [
   {
     id: "seed-yaba",
     code: "YABA24",
-    name: "Yaba Traders Adashe",
+    name: "Yaba Traders Cooperative",
     orgLabel: "Yaba Market Traders Assoc.",
     category: "Business",
     blurb:
@@ -929,8 +929,8 @@ export const SEED_DISCOVER = [
   },
   {
     id: "seed-school",
-    code: "FEESAJ",
-    name: "Second-Term Fees Ajo",
+    code: "FEESCL",
+    name: "Second-Term Fees Club",
     orgLabel: "Organiser: Mrs Balogun · 3 circles run",
     category: "School fees",
     blurb: "Timed so each payout lands two weeks before a school term begins.",

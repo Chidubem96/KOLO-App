@@ -61,7 +61,7 @@ export function Onboarding() {
                 </div>
                 <p className="pull">Save in circles. Know what&apos;s yours to spend.</p>
                 <p className="abouttext">
-                  Braid runs your ajo circles, does the money arithmetic your head does badly, and
+                  Braid runs your savings clubs, does the money arithmetic your head does badly, and
                   shows the one figure that&apos;s actually yours to spend this month.
                 </p>
                 <Field label="Your name">
