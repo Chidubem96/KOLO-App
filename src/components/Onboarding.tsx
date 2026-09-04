@@ -67,7 +67,7 @@ export function Onboarding() {
                 <Field label="Your name">
                   <input
                     value={name}
-                    placeholder="e.g. Chidubem"
+                    placeholder="e.g. Ngozi"
                     onChange={(e) => setName(e.target.value)}
                   />
                 </Field>
