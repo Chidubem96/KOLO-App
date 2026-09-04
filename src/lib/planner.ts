@@ -168,3 +168,66 @@ export function planForTarget(
   }
   return out;
 }
+
+/** "what would ₦500,000 grow to in 3 years at 25% a year" */
+export function parseGrowthQuestion(q: string): {
+  principal: number | null;
+  ratePct: number | null;
+  years: number | null;
+} {
+  const t = " " + q.toLowerCase().replace(/,/g, "") + " ";
+
+  let principal: number | null = null;
+  const amts = t.match(/₦?\s?(\d+(?:\.\d+)?)\s?(k|m|million|thousand|grand)?\b/g);
+  if (amts) {
+    let best = 0;
+    for (const raw of amts) {
+      const mm = raw.match(/(\d+(?:\.\d+)?)\s?(k|m|million|thousand|grand)?/);
+      if (!mm) continue;
+      let n = parseFloat(mm[1]);
+      const suf = mm[2];
+      if (suf === "k" || suf === "thousand" || suf === "grand") n *= 1_000;
+      else if (suf === "m" || suf === "million") n *= 1_000_000;
+      if (!suf && n < 1000) continue;
+      if (n > best) best = n;
+    }
+    if (best > 0) principal = Math.round(best);
+  }
+
+  let ratePct: number | null = null;
+  const rm =
+    t.match(/(\d+(?:\.\d+)?)\s*(?:%|percent|per ?cent)/) ||
+    t.match(/at\s+(\d+(?:\.\d+)?)\s+(?:a|per)\s+year/);
+  if (rm) ratePct = Math.min(200, parseFloat(rm[1]));
+
+  let years: number | null = null;
+  const ym =
+    t.match(/(\d+(?:\.\d+)?)\s*(?:years?|yrs?)\b/) ||
+    t.match(/(?:over|in|after|for)\s+(\d+(?:\.\d+)?)\s*(?:years?|yrs?)/);
+  if (ym) years = Math.min(50, parseFloat(ym[1]));
+
+  return { principal, ratePct, years };
+}
+
+/** Plain compound arithmetic on a rate the user supplied — NOT a forecast. */
+export function projectGrowth(principal: number, ratePct: number, years: number) {
+  const r = ratePct / 100;
+  const whole = Math.min(50, Math.ceil(years));
+  const yearly: { year: number; value: number }[] = [];
+  let v = principal;
+  for (let i = 1; i <= whole; i++) {
+    v = v * (1 + r);
+    yearly.push({ year: i, value: Math.round(v) });
+  }
+  const future = Math.round(principal * Math.pow(1 + r, years));
+  return {
+    principal,
+    annual_rate_pct: ratePct,
+    years,
+    future_value: future,
+    total_gain: future - principal,
+    yearly,
+    caveat:
+      "straight compounding at the rate the user gave — not a forecast; real returns move and can be negative",
+  };
+}

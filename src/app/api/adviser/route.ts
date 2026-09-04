@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
-import { ASK_RULES, enforce, deterministicAnswer } from "@/lib/adviser";
+import { ASK_RULES, enforce, deterministicFallback } from "@/lib/adviser";
 
 export const runtime = "nodejs";
 export const maxDuration = 45;
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     } as any);
 
     if (msg.stop_reason === "refusal")
-      return NextResponse.json({ answer: deterministicAnswer(context), flagged: false, action });
+      return NextResponse.json({ answer: deterministicFallback(context, question), flagged: false, action });
 
     const text = (msg.content as any[])
       .filter((b) => b.type === "text")
@@ -67,17 +67,17 @@ export async function POST(req: NextRequest) {
       .trim();
 
     if (!text)
-      return NextResponse.json({ answer: deterministicAnswer(context), flagged: false, action });
+      return NextResponse.json({ answer: deterministicFallback(context, question), flagged: false, action });
 
     const check = enforce(text, context, question);
     return NextResponse.json(
       check.ok
         ? { answer: text, flagged: false, action }
-        : { answer: deterministicAnswer(context), flagged: true, action }
+        : { answer: deterministicFallback(context, question), flagged: true, action }
     );
   } catch (e: any) {
     return NextResponse.json({
-      answer: deterministicAnswer(context),
+      answer: deterministicFallback(context, question),
       flagged: false,
       action,
       error: String(e?.message || e),

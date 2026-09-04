@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { buildAskContext, assumeLine } from "@/lib/askContext";
-import { deterministicAnswer } from "@/lib/adviser";
+import { deterministicFallback } from "@/lib/adviser";
 import { logEvent } from "@/lib/events";
 import { fmt } from "@/lib/format";
 import { GoalSheet } from "../sheets/GoalSheet";
@@ -67,7 +67,7 @@ export function Ask() {
         ...m,
         {
           role: "kolo",
-          text: j.answer || deterministicAnswer(ctx),
+          text: j.answer || deterministicFallback(ctx, q),
           assume,
           flagged: !!j.flagged,
           action:
@@ -81,7 +81,8 @@ export function Ask() {
         {
           role: "kolo",
           text:
-            deterministicAnswer(ctx) + " (Couldn't reach the assistant just now.)",
+            deterministicFallback(ctx, q) +
+            " (Couldn't reach the assistant just now.)",
           assume,
         },
       ]);

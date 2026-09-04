@@ -79,9 +79,76 @@ HOW TO ANSWER:
 - Kolo's tools, by name: Goals (create one and set its priority High so Safe-to-Spend reserves the monthly amount before it shows as spendable); Obligations (fixed monthly commitments); circle auto-debit (a rotating circle is forced monthly saving); the volatility-buffer slider in Settings.
 - Frameworks to reach for when they fit: pay-yourself-first (move the savings amount the day income lands), 50/30/20 (context.budget_frame has the split and the guide), one sinking-fund Goal per lump-sum target.
 - If the target is not realistic on the current numbers, say so plainly and name the single change that makes it work.
+- Growth / "what would X grow to at Y%" questions: if context.growth_projection is present, narrate future_value, total_gain and (briefly) the yearly path from it — never do the compounding yourself. Always add context.growth_projection.caveat in your own words: it is arithmetic on the rate the user assumed, not a forecast. If it is NOT present, say Kolo would need the amount, a yearly rate and a number of years to work it out.
+- "Where should I put my money / should I go all-in / which sleeve" questions: Kolo is NOT a licensed investment adviser — do not tell the user what to buy, what to avoid, or whether to concentrate. Lay out the plain trade-off (a higher expected return means a real chance of loss; money you need soon should not carry that risk) and point them to the Grow tab to read each option's risk label. One or two sentences.
 
 CONTEXT:
 `;
+
+const naira = (n: number) =>
+  "₦" + Math.round(Math.abs(Number(n) || 0)).toLocaleString("en-NG");
+
+/* Picked when the model's own words fail the guardrail (or it errors/refuses).
+   Answers the KIND of question that was asked instead of always dumping
+   Safe-to-Spend. Every figure here comes straight from the engine context. */
+export function deterministicFallback(ctx: any, question: string): string {
+  const g = ctx?.growth_projection;
+  if (g) {
+    return (
+      "Straight compounding at " +
+      g.annual_rate_pct +
+      "% a year, " +
+      naira(g.principal) +
+      " becomes about " +
+      naira(g.future_value) +
+      " after " +
+      g.years +
+      (g.years === 1 ? " year" : " years") +
+      " — a gain of " +
+      naira(g.total_gain) +
+      ". That is arithmetic on the rate you assumed, not a forecast: real returns move and can be negative. Kolo can't tell you whether to invest — it isn't a licensed adviser."
+    );
+  }
+  const pr = ctx?.planning_request;
+  if (pr && typeof pr.required_monthly === "number") {
+    let s =
+      "To reach " +
+      naira(pr.target) +
+      " in " +
+      pr.months +
+      (pr.months === 1 ? " month" : " months") +
+      ", set aside " +
+      naira(pr.required_monthly) +
+      " a month.";
+    if (pr.monthly_shortfall > 0)
+      s +=
+        " That's " +
+        naira(pr.monthly_shortfall) +
+        " more than your current unallocated " +
+        naira(pr.unallocated_monthly_now) +
+        " a month, so something has to give.";
+    else
+      s +=
+        " Your unallocated " +
+        naira(pr.unallocated_monthly_now) +
+        " a month covers it.";
+    return s + " Create a Goal and set it to High priority so Kolo holds it aside.";
+  }
+  if (
+    /\b(invest|growth|sleeve|return|returns|portfolio|stock|shares?|crypto|dollar|mmf|money market|yield|interest)\b/i.test(
+      question
+    )
+  ) {
+    return (
+      "Kolo can't answer that from your figures — it doesn't model investment returns, and it isn't a licensed adviser, so it can't tell you where to put money or whether to go all-in. What it can show is your Safe to Spend: " +
+      naira(ctx.safe_to_spend) +
+      " until " +
+      ctx.horizon_date +
+      ". Open the Grow tab to compare each option's risk label."
+    );
+  }
+  return deterministicAnswer(ctx);
+}
 
 export function deterministicAnswer(ctx: any): string {
   const s = ctx.subtractions;

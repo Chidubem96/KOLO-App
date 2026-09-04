@@ -9,8 +9,10 @@ import {
 import {
   budgetFrame,
   discretionaryByCategory,
+  parseGrowthQuestion,
   parsePlanRequest,
   planForTarget,
+  projectGrowth,
 } from "./planner";
 import { fmtDateY, fmtMonthY, iso, monthsUntil, todayStr } from "./format";
 import type { KoloData } from "./types";
@@ -88,6 +90,11 @@ export function buildAskContext(d: KoloData, question?: string) {
     const { target, months, label } = parsePlanRequest(question);
     const plan = planForTarget(d, target, months, label);
     if (plan) ctx.planning_request = plan;
+
+    const g = parseGrowthQuestion(question);
+    if (g.principal && g.ratePct != null && g.years) {
+      ctx.growth_projection = projectGrowth(g.principal, g.ratePct, g.years);
+    }
   }
 
   const roundDeep = (v: any): any => {
