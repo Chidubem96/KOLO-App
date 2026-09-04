@@ -4,6 +4,7 @@ import { useSheet } from "../sheet-context";
 import { saveProfile } from "@/lib/api";
 import { Field, Icon, MoneyInput, Seg } from "../ui";
 import { AccountSheet } from "../sheets/AccountSheet";
+import { FeedbackSheet } from "../sheets/FeedbackSheet";
 import { fmt } from "@/lib/format";
 import { deleteRow } from "@/lib/api";
 
@@ -161,6 +162,19 @@ export function Settings({ embedded }: { embedded?: boolean }) {
           escrow account yet.
         </p>
       </div>
+
+      <div className="divider" />
+      <h3 className="h-sec">Feedback</h3>
+      <p className="hint" style={{ margin: "4px 0 10px" }}>
+        This is a test build. Tell the builder what&apos;s broken, confusing or
+        missing — it directly shapes the next version.
+      </p>
+      <button
+        className="btn ghost block"
+        onClick={() => sheet.open(<FeedbackSheet screen="Settings" />)}
+      >
+        Send feedback
+      </button>
 
       <button
         className="btn ghost block"

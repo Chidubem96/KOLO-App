@@ -534,6 +534,32 @@ export async function addInvestment(args: {
     amount: args.amount,
   });
 }
+/* ---------- feedback ---------- */
+export async function sendFeedback(args: {
+  userId: string;
+  name: string;
+  screen: string;
+  rating: number | null;
+  message: string;
+}) {
+  const sb = supabase();
+  let email = "";
+  try {
+    email = (await sb.auth.getUser()).data.user?.email ?? "";
+  } catch {}
+  await sb.from("feedback").insert({
+    user_id: args.userId,
+    name: args.name,
+    email,
+    screen: args.screen,
+    rating: args.rating,
+    message: args.message,
+    app_version: "v2",
+    user_agent:
+      typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 300) : "",
+  });
+}
+
 export async function peekCircle(code: string) {
   const { data } = await supabase().rpc("peek_circle", { p_code: code });
   return Array.isArray(data) && data[0] ? data[0] : null;

@@ -18,6 +18,7 @@ import { fmt, fmtDate, fmtSigned, clamp, todayStr } from "@/lib/format";
 import { Icon } from "../ui";
 import { CircleDetail } from "../sheets/CircleDetail";
 import { AskSheet } from "../sheets/AskSheet";
+import { FeedbackSheet } from "../sheets/FeedbackSheet";
 
 export function Home({ goTo }: { goTo: (t: any) => void }) {
   const { data, reload, recurringPosted, clearRecurringNote, toast } = useKolo();
@@ -271,6 +272,14 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
           })}
         </>
       )}
+
+      <button
+        className="btn ghost sm"
+        style={{ margin: "22px auto 4px", display: "block", opacity: 0.75 }}
+        onClick={() => sheet.open(<FeedbackSheet screen="Home" />)}
+      >
+        Test build · send feedback
+      </button>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { MoneySheet } from "../sheets/MoneySheet";
 import { GoalsSheet } from "../sheets/GoalsSheet";
 import { SettingsSheet } from "../sheets/SettingsSheet";
 import { AskSheet } from "../sheets/AskSheet";
+import { FeedbackSheet } from "../sheets/FeedbackSheet";
 import { CircleDetail } from "../sheets/CircleDetail";
 
 export function You({ goTo }: { goTo: (t: any) => void }) {
@@ -144,6 +145,22 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
             </button>
           );
         })}
+      </div>
+
+      <div className="section-label">This is a test build</div>
+      <div className="card tight">
+        <button className="lrow" onClick={() => sheet.open(<FeedbackSheet screen="You" />)}>
+          <span style={{ width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 9, background: "var(--card-2)", color: "var(--mut)" }}>
+            {Icon.ask}
+          </span>
+          <div className="grow">
+            <div className="t">Send feedback</div>
+            <div className="s">
+              Anything broken, confusing or missing — it shapes the next version
+            </div>
+          </div>
+          <span className="chev">{Icon.chev}</span>
+        </button>
       </div>
 
       <button className="btn ghost full" style={{ marginTop: 16 }} onClick={signOut}>
