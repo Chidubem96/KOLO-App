@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { addTxns } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import {
   CATS,
   amountInSource,
@@ -125,6 +126,7 @@ function ManualForm() {
               period: null,
             },
           ]);
+          logEvent("txn_logged", { count: 1, via: "manual", category }, "Money");
           await reload();
           close();
         }}
@@ -222,7 +224,7 @@ function PasteForm() {
           {status}
         </div>
       )}
-      {drafts && <DraftReview drafts={drafts} />}
+      {drafts && <DraftReview drafts={drafts} via="paste" />}
     </div>
   );
 }
@@ -284,7 +286,7 @@ function CsvMapper({ rows }: { rows: string[][] }) {
     </Field>
   );
 
-  if (drafts) return <DraftReview drafts={drafts} />;
+  if (drafts) return <DraftReview drafts={drafts} via="csv" />;
 
   return (
     <div>
@@ -329,7 +331,13 @@ function CsvMapper({ rows }: { rows: string[][] }) {
   );
 }
 
-function DraftReview({ drafts }: { drafts: DraftTxn[] }) {
+function DraftReview({
+  drafts,
+  via = "import",
+}: {
+  drafts: DraftTxn[];
+  via?: string;
+}) {
   const { data, reload } = useKolo();
   const { close } = useSheet();
   const [list, setList] = useState(drafts.slice(0, 60));
@@ -396,6 +404,7 @@ function DraftReview({ drafts }: { drafts: DraftTxn[] }) {
         onClick={async () => {
           const keep = list.filter((d) => d.include && d.amount > 0);
           if (!keep.length) return close();
+          logEvent("txn_logged", { count: keep.length, via }, "Money");
           await addTxns(
             data!.userId,
             keep.map((d) => ({

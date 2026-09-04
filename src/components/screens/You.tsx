@@ -9,6 +9,7 @@ import {
   myReliability,
 } from "@/lib/engine";
 import { saveProfile } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { fmt } from "@/lib/format";
 import { Icon, Ring } from "../ui";
 import { MoneySheet } from "../sheets/MoneySheet";
@@ -30,6 +31,7 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
 
   const verify = async (field: string, label: string) => {
     await saveProfile(d.userId, { [field]: true });
+    logEvent("identity_verified", { field }, "You");
     toast(label + " verified");
     reload();
   };

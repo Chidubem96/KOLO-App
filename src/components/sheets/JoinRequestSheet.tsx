@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { requestJoin } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { fmt } from "@/lib/format";
 import { Field, Sheet } from "../ui";
 import type { DiscoverCircle } from "@/lib/types";
@@ -25,6 +26,11 @@ export function JoinRequestSheet({
 
   const submit = async () => {
     setBusy(true);
+    logEvent(
+      "circle_join_requested",
+      { seed: !!c.seed, category: c.category, qualifies, spots },
+      "Discover"
+    );
     try {
       if (c.seed) {
         toast(

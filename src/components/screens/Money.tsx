@@ -15,6 +15,7 @@ import {
   updateObligation,
   deleteRow,
 } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import {
   clamp,
   daysAgo,
@@ -167,6 +168,11 @@ export function Money({ embedded }: { embedded?: boolean }) {
                       autoPost: true,
                       since: todayStr(),
                       sig: x.sig,
+                    });
+                    logEvent("obligation_added", {
+                      amount: x.amount,
+                      cadence: x.cadence,
+                      source: "detected",
                     });
                     reload();
                   }}

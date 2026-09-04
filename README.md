@@ -24,8 +24,9 @@ You need three free accounts: **Supabase**, **Vercel**, **Anthropic**.
 2. Open **SQL Editor → New query**, paste the entire contents of
    [`supabase/schema.sql`](supabase/schema.sql), click **Run**, then do the same with
    [`supabase/schema-v2.sql`](supabase/schema-v2.sql) (Discover, disputes, guarantee
-   fund, Grow, identity) and [`supabase/schema-v3.sql`](supabase/schema-v3.sql)
-   (in-app feedback). All are safe to re-run.
+   fund, Grow, identity), [`supabase/schema-v3.sql`](supabase/schema-v3.sql)
+   (in-app feedback) and [`supabase/schema-v4.sql`](supabase/schema-v4.sql)
+   (product events). All are safe to re-run.
    [`supabase/metrics.sql`](supabase/metrics.sql) is a read-only query pack for
    watching usage during testing — run its blocks one at a time.
 3. **Authentication → Sign In / Providers → Email**: keep **Email** enabled, and

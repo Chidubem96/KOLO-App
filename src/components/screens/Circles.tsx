@@ -10,6 +10,7 @@ import {
   myReliability,
 } from "@/lib/engine";
 import { joinCircle, peekCircle } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { fmt, fmtDate } from "@/lib/format";
 import { Icon, Ring } from "../ui";
 import { CircleSheet } from "../sheets/CircleSheet";
@@ -38,6 +39,7 @@ export function Circles() {
     setBusy(true);
     try {
       await joinCircle(code.trim(), d.profile.name || "Member");
+      logEvent("circle_joined", { via: "code" }, "Circles");
       setCode("");
       setPeek(null);
       toast("Joined " + (peek?.name || "the circle"));

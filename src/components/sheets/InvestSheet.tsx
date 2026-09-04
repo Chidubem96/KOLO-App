@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { addInvestment } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { fmt } from "@/lib/format";
 import { Sheet } from "../ui";
 
@@ -49,6 +50,7 @@ export function InvestSheet({
       kind: o.kind,
       amount: amt,
     });
+    logEvent("invest", { product: o.name, kind: o.kind, amount: amt, risk: o.risk }, "Grow");
     toast(fmt(amt) + " moved into " + o.name + " — track it under Grow");
     await reload();
     setBusy(false);

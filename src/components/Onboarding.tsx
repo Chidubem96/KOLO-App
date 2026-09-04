@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useKolo } from "@/lib/store";
 import { addAccount, saveProfile } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { Field, Icon, MoneyInput, Seg } from "./ui";
 import { parseMoney } from "@/lib/format";
 
@@ -39,6 +40,11 @@ export function Onboarding() {
       income_day: incDay,
       salary_day: incomeType !== "irregular" ? incDay : null,
       onboarded: true,
+    });
+    logEvent("onboarded", {
+      income_type: incomeType,
+      accounts: valid.length,
+      income_amount: incAmount,
     });
     await reload();
   };

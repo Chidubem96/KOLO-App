@@ -190,3 +190,62 @@ select
 from feedback
 group by 1
 order by items desc;
+
+
+-- ============================================================
+-- 11. EVENTS — feature usage (needs schema-v4.sql)
+--     What people actually do, and how many distinct people
+--     have done each thing at least once.
+-- ============================================================
+select
+  name,
+  count(*)                       as times,
+  count(distinct user_id)        as people,
+  max(created_at)                as last_seen
+from events
+group by 1
+order by times desc;
+
+
+-- ============================================================
+-- 12. EVENTS BY DAY  —  activity over time, split by event
+-- ============================================================
+select
+  created_at::date  as day,
+  name,
+  count(*)          as times
+from events
+group by 1, 2
+order by 1 desc, times desc;
+
+
+-- ============================================================
+-- 13. ASK KOLO  —  usage + how often the guardrail fired
+--     'flagged' = model used an unverifiable figure, so the
+--     user was shown the engine's own deterministic answer.
+-- ============================================================
+select
+  count(*)                                          as questions,
+  count(distinct user_id)                           as askers,
+  count(*) filter (where (props->>'flagged')::bool) as guardrail_fired,
+  count(*) filter (where (props->>'error')::bool)   as errors,
+  round(avg((props->>'chars')::numeric), 0)         as avg_question_len
+from events
+where name = 'ask_kolo';
+
+
+-- ============================================================
+-- 14. FUNNEL FROM EVENTS  —  distinct people reaching each step
+-- ============================================================
+select
+  count(distinct user_id) filter (where name = 'onboarded')               as onboarded,
+  count(distinct user_id) filter (where name = 'txn_logged')              as logged_a_spend,
+  count(distinct user_id) filter (where name = 'obligation_added')        as added_obligation,
+  count(distinct user_id) filter (where name = 'goal_added')              as added_goal,
+  count(distinct user_id) filter (where name = 'ask_kolo')                as used_ask_kolo,
+  count(distinct user_id) filter (where name = 'circle_created')          as created_circle,
+  count(distinct user_id) filter (where name in ('circle_joined','circle_join_requested')) as joined_or_requested,
+  count(distinct user_id) filter (where name = 'contribution_paid')       as paid_a_contribution,
+  count(distinct user_id) filter (where name = 'invest')                  as tried_grow,
+  count(distinct user_id) filter (where name = 'feedback_sent')           as sent_feedback
+from events;

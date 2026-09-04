@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useKolo } from "@/lib/store";
 import { buildAskContext, assumeLine } from "@/lib/askContext";
 import { deterministicAnswer } from "@/lib/adviser";
+import { logEvent } from "@/lib/events";
 
 interface Msg {
   role: "user" | "kolo";
@@ -42,6 +43,11 @@ export function Ask() {
         body: JSON.stringify({ question: q, context: ctx }),
       });
       const j = await res.json();
+      logEvent(
+        "ask_kolo",
+        { chars: q.length, flagged: !!j.flagged, fallback: !j.answer },
+        "Ask"
+      );
       setMsgs((m) => [
         ...m,
         {
@@ -52,6 +58,7 @@ export function Ask() {
         },
       ]);
     } catch {
+      logEvent("ask_kolo", { chars: q.length, error: true }, "Ask");
       setMsgs((m) => [
         ...m,
         {

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { addObligation, updateObligation } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { parseMoney, todayStr } from "@/lib/format";
 import { CatSelect, Field, MoneyInput, Seg, Sheet } from "../ui";
 
@@ -92,7 +93,7 @@ export function ObligationSheet({ oblId }: { oblId?: string }) {
               category: category || "rent",
               autoPost,
             });
-          else
+          else {
             await addObligation(data!.userId, {
               label: label.trim(),
               kind: "bill",
@@ -106,6 +107,13 @@ export function ObligationSheet({ oblId }: { oblId?: string }) {
               since: todayStr(),
               sig: null,
             });
+            logEvent("obligation_added", {
+              amount,
+              cadence,
+              category: category || "rent",
+              autoPost,
+            });
+          }
           await reload();
           close();
         }}

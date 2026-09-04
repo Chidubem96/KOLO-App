@@ -14,6 +14,7 @@ import {
   safeToSpend,
 } from "@/lib/engine";
 import { saveProfile, updateGoal, recordContribution, addTxns } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { fmt, fmtDate, fmtSigned, clamp, todayStr } from "@/lib/format";
 import { Icon } from "../ui";
 import { CircleDetail } from "../sheets/CircleDetail";
@@ -162,6 +163,7 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
                       await updateGoal(o.id, { paused: true });
                     if (o.kind === "zeroBuffer")
                       await saveProfile(d.userId, { buffer_k: 0 });
+                    logEvent("recovery_action", { kind: o.kind, gain: o.gain }, "Home");
                     reload();
                   }}
                 >
@@ -259,6 +261,7 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
                             period: null,
                           },
                         ] as any);
+                        logEvent("contribution_paid", { amount: c.amount, cycle: cur, via: "home" }, "Home");
                         toast(fmt(c.amount) + " contribution recorded for " + c.name);
                         reload();
                       }}

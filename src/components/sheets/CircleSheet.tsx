@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { createCircle } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { Field, MoneyInput, Seg, Sheet } from "../ui";
 import { fmt } from "@/lib/format";
 
@@ -335,6 +336,14 @@ export function CircleSheet() {
                   reliabilityFloor: d.reliabilityFloor,
                   organiserStake: d.organiserStake,
                   blurb: d.blurb,
+                });
+                logEvent("circle_created", {
+                  amount: d.amount,
+                  members: d.maxSize,
+                  cadence: d.cadence,
+                  type: d.type,
+                  discoverable: d.discoverable,
+                  float: d.floatEnabled,
                 });
                 await reload();
                 setCreated(code);

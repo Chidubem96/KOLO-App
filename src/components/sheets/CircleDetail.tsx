@@ -18,6 +18,7 @@ import {
   resolveDispute,
   setMemberAutoDebit,
 } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { fmt, fmtDate, fmtDateY, todayStr } from "@/lib/format";
 import { Sheet, initials } from "../ui";
 import { DisputeSheet } from "./DisputeSheet";
@@ -74,6 +75,7 @@ export function CircleDetail({ circleId }: { circleId: string }) {
         period: null,
       },
     ] as any);
+    logEvent("contribution_paid", { amount: c.amount, cycle: cur, via: "detail" }, "CircleDetail");
     toast(fmt(c.amount) + " contribution recorded");
     reload();
   };

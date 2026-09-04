@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { sendFeedback } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { Field, Sheet } from "../ui";
 
 const FACES: [number, string, string][] = [
@@ -34,6 +35,7 @@ export function FeedbackSheet({ screen = "You" }: { screen?: string }) {
         rating,
         message: message.trim(),
       });
+      logEvent("feedback_sent", { rating, has_note: !!message.trim() }, screen);
       toast("Sent — thank you 🙏");
       close();
     } catch {

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { addGoal } from "@/lib/api";
+import { logEvent } from "@/lib/events";
 import { addMonths, iso } from "@/lib/format";
 import { Field, MoneyInput, Seg, Sheet } from "../ui";
 
@@ -61,6 +62,11 @@ export function GoalSheet() {
             priority: Number(priority),
             paused: false,
             contribLog: [],
+          });
+          logEvent("goal_added", {
+            target,
+            saved,
+            priority: Number(priority),
           });
           await reload();
           close();
