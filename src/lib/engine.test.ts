@@ -5,6 +5,7 @@ import {
   categoriseOr,
   myReliability,
   monthlyRollups,
+  floatDecision,
 } from "./engine";
 import { kolo, txn, circle, recentDate } from "./test-fixtures";
 
@@ -103,6 +104,45 @@ describe("myReliability", () => {
 /* ---------------------------------------------------------------------------
    monthlyRollups — thin data must not be annualised
 --------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   float vote — must be unanimous, no partial opt-in
+--------------------------------------------------------------------------- */
+describe("floatDecision", () => {
+  const members = [
+    { id: "m1", circleId: "c1", userId: "u1", name: "A", slot: 1, autoDebit: true, joinedAt: recentDate(60) },
+    { id: "m2", circleId: "c1", userId: "u2", name: "B", slot: 2, autoDebit: true, joinedAt: recentDate(60) },
+    { id: "m3", circleId: "c1", userId: "u3", name: "C", slot: 3, autoDebit: true, joinedAt: recentDate(60) },
+  ];
+  const fv = (userId: string, vote: "in" | "out") => ({
+    id: userId, circleId: "c1", userId, cycle: 0, vote,
+  });
+
+  it("does not run until every member has voted in", () => {
+    const c = circle({ members, floatVotes: [fv("u1", "in"), fv("u2", "in")] });
+    const d = floatDecision(c, 0);
+    expect(d.active).toBe(false);
+    expect(d.inCount).toBe(2);
+    expect(d.notVoted).toEqual(["C"]);
+  });
+
+  it("does not run if anyone votes out", () => {
+    const c = circle({
+      members,
+      floatVotes: [fv("u1", "in"), fv("u2", "in"), fv("u3", "out")],
+    });
+    expect(floatDecision(c, 0).active).toBe(false);
+    expect(floatDecision(c, 0).against).toEqual(["C"]);
+  });
+
+  it("runs only when unanimous", () => {
+    const c = circle({
+      members,
+      floatVotes: [fv("u1", "in"), fv("u2", "in"), fv("u3", "in")],
+    });
+    expect(floatDecision(c, 0).active).toBe(true);
+  });
+});
+
 describe("monthlyRollups", () => {
   it("marks thin history provisional and does not scale it up", () => {
     const d = kolo({

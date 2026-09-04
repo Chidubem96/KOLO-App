@@ -7,6 +7,7 @@ import {
   circleCycleDue,
   circleCycleIndex,
   circlePot,
+  floatDecision,
   payoutRecipient,
 } from "@/lib/engine";
 import {
@@ -333,14 +334,37 @@ export function CircleDetail({ circleId }: { circleId: string }) {
             </div>
           )}
 
-          {c.floatEnabled && (
-            <button
-              className="btn ghost full"
-              onClick={() => open(<FloatVoteSheet circleId={c.id} cycle={cur} />)}
-            >
-              Circle float vote
-            </button>
-          )}
+          {c.floatEnabled && (() => {
+            const dec = floatDecision(c, cur);
+            return (
+              <>
+                <div
+                  className="advise"
+                  style={{
+                    marginTop: 12,
+                    borderColor: dec.active ? "rgba(53,211,153,.4)" : undefined,
+                  }}
+                >
+                  <b>Idle pot</b>
+                  {dec.active
+                    ? "All " + dec.total + " members agreed — this cycle's pot is earning yield in the fund."
+                    : "In escrow. Moving it to the fund needs every member to agree (" +
+                      dec.inCount +
+                      "/" +
+                      dec.total +
+                      " so far · " +
+                      dec.blockedReason +
+                      ")."}
+                </div>
+                <button
+                  className="btn ghost full"
+                  onClick={() => open(<FloatVoteSheet circleId={c.id} cycle={cur} />)}
+                >
+                  Circle float vote
+                </button>
+              </>
+            );
+          })()}
         </>
       )}
 

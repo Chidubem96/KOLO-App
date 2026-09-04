@@ -208,7 +208,7 @@ export function CircleSheet() {
                   checked={d.floatEnabled}
                   onChange={() => set({ floatEnabled: true })}
                 />
-                Hold the pot in the Money Market Fund and split the yield (members vote each cycle)
+                Hold the pot in the Money Market Fund and split the yield — each cycle, only if every member agrees
               </label>
               <label>
                 <input

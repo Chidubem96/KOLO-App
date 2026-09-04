@@ -818,6 +818,33 @@ export function floatProjectedYield(pot: number, days: number) {
   return Math.round((pot * 0.2 * days) / 365);
 }
 
+/** Circle-level, all-or-nothing: the whole pot moves into the fund for a
+    cycle ONLY when every member has voted "in". Any "out", or anyone who
+    hasn't voted, keeps the pot in escrow — no partial opt-in / opt-out. */
+export function floatDecision(c: CircleFull, cycle: number) {
+  const votes = c.floatVotes.filter((v) => v.cycle === cycle);
+  const voteBy: Record<string, "in" | "out"> = {};
+  votes.forEach((v) => (voteBy[v.userId] = v.vote as "in" | "out"));
+  const inCount = c.members.filter((m) => voteBy[m.userId] === "in").length;
+  const against = c.members.filter((m) => voteBy[m.userId] === "out");
+  const notVoted = c.members.filter((m) => !voteBy[m.userId]);
+  const total = c.members.length;
+  const active = total > 0 && inCount === total;
+  return {
+    active,
+    inCount,
+    total,
+    against: against.map((m) => m.name),
+    notVoted: notVoted.map((m) => m.name),
+    // human summary of why it isn't running yet
+    blockedReason: active
+      ? null
+      : against.length
+      ? against.length + (against.length === 1 ? " member has" : " members have") + " declined"
+      : notVoted.length + " yet to vote",
+  };
+}
+
 export const SEED_DISCOVER = [
   {
     id: "seed-yaba",
