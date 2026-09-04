@@ -140,7 +140,7 @@ export function Money({ embedded }: { embedded?: boolean }) {
             Looks like a recurring obligation
           </p>
           <p className="hint" style={{ marginBottom: 8 }}>
-            Confirming teaches Kolo and pulls it into Safe-to-Spend.
+            Confirming teaches Braid and pulls it into Safe-to-Spend.
           </p>
           {det.slice(0, 3).map((x) => (
             <div key={x.sig} className="lrow" style={{ cursor: "default" }}>

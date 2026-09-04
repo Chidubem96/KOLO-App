@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   if (!question) return NextResponse.json({ error: "no question" }, { status: 400 });
 
   // engine-built action the client turns into a pre-filled "New goal" sheet.
-  // Every field here comes from Kolo's deterministic planner, never the model.
+  // Every field here comes from Braid's deterministic planner, never the model.
   const sg = (context as any)?.planning_request?.suggested_goal;
   const action =
     sg && typeof sg.target === "number" && sg.deadline_iso

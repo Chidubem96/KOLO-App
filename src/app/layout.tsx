@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Kolo",
+  title: "Braid",
   description: "Save in circles. Know what's yours to spend.",
 };
 export const viewport: Viewport = {
@@ -33,7 +33,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Kolo" />
+        <meta name="apple-mobile-web-app-title" content="Braid" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body>{children}</body>

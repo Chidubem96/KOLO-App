@@ -1,4 +1,4 @@
-/* Planning helpers for "Ask Kolo".
+/* Planning helpers for "Ask Braid".
    Every figure a planning answer needs is computed HERE, deterministically,
    so the adviser model can narrate it without tripping the numeral guardrail. */
 import { catLabel, isDisc, monthlyRollups } from "./engine";

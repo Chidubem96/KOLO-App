@@ -518,7 +518,7 @@ export function CircleDetail({ circleId }: { circleId: string }) {
             )}
           </div>
           <p className="disclosure">
-            Records are shared with every member and time-stamped. Neither the organiser nor Kolo
+            Records are shared with every member and time-stamped. Neither the organiser nor Braid
             can edit a past entry.
           </p>
         </>

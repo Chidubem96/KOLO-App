@@ -6,7 +6,7 @@ import { Ask } from "../screens/Ask";
 export function AskSheet() {
   const { close } = useSheet();
   return (
-    <Sheet title="Ask Kolo" onClose={close}>
+    <Sheet title="Ask Braid" onClose={close}>
       <Ask />
     </Sheet>
   );

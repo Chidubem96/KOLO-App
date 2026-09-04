@@ -53,7 +53,7 @@ export function FeedbackSheet({ screen = "You" }: { screen?: string }) {
       </p>
 
       <div className="field">
-        <label>How does Kolo feel right now?</label>
+        <label>How does Braid feel right now?</label>
         <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
           {FACES.map(([n, face, lbl]) => (
             <button

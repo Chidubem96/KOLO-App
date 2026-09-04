@@ -111,7 +111,7 @@ export function InvestSheet({
         {busy ? "Moving…" : "Move money in"}
       </button>
       <p className="disclosure" style={{ textAlign: "center" }}>
-        Kolo is not a licensed investment adviser. Illustrative prototype — no real money moves.
+        Braid is not a licensed investment adviser. Illustrative prototype — no real money moves.
       </p>
     </Sheet>
   );

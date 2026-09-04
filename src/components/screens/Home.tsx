@@ -249,13 +249,13 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
       )}
 
       <div className={"advise " + nudge.tone}>
-        <b>Kolo</b>
+        <b>Braid</b>
         {nudge.text}
       </div>
 
       <div className="btnrow" style={{ marginTop: 14 }}>
         <button className="btn ghost sm" onClick={() => sheet.open(<AskSheet />)}>
-          Ask Kolo
+          Ask Braid
         </button>
         <button className="btn ghost sm" onClick={() => goTo("you")}>
           Spending & goals

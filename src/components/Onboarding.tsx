@@ -57,11 +57,11 @@ export function Onboarding() {
             {step === 1 && (
               <>
                 <div className="wordmark-lg" style={{ margin: "18px 0 4px", fontSize: 34 }}>
-                  k<b>o</b>lo
+                  br<b>a</b>id
                 </div>
                 <p className="pull">Save in circles. Know what&apos;s yours to spend.</p>
                 <p className="abouttext">
-                  Kolo runs your ajo circles, does the money arithmetic your head does badly, and
+                  Braid runs your ajo circles, does the money arithmetic your head does badly, and
                   shows the one figure that&apos;s actually yours to spend this month.
                 </p>
                 <Field label="Your name">
@@ -102,7 +102,7 @@ export function Onboarding() {
                 <h2 className="h-title">Where is your money?</h2>
                 <p className="abouttext" style={{ margin: "8px 0 16px" }}>
                   Add the accounts and wallets you actually use. Balances only —
-                  Kolo never moves money. Two or more gives a full picture.
+                  Braid never moves money. Two or more gives a full picture.
                 </p>
                 {accts.map((a, i) => (
                   <div

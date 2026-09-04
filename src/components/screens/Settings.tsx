@@ -41,7 +41,7 @@ export function Settings({ embedded }: { embedded?: boolean }) {
       <div className="divider" />
       <h3 className="h-sec">Assumptions</h3>
       <p className="hint" style={{ margin: "4px 0 10px" }}>
-        Kolo states these on every recommendation. Correcting one retrains your
+        Braid states these on every recommendation. Correcting one retrains your
         figure.
       </p>
       <Field label="Income pattern">
@@ -187,7 +187,7 @@ export function Settings({ embedded }: { embedded?: boolean }) {
         className="hint"
         style={{ marginTop: 16, textAlign: "center" }}
       >
-        Kolo V1 · working name · figures are yours, held in your account.
+        Braid V1 · working name · figures are yours, held in your account.
       </p>
     </div>
   );

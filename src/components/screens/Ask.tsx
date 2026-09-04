@@ -72,7 +72,7 @@ export function Ask() {
       const j = await res.json();
       if (j.debug_rejected)
         // eslint-disable-next-line no-console
-        console.warn("[Ask Kolo] guard rejected token:", j.debug_rejected, "| Q:", q);
+        console.warn("[Ask Braid] guard rejected token:", j.debug_rejected, "| Q:", q);
       logEvent(
         "ask_kolo",
         {
@@ -117,9 +117,9 @@ export function Ask() {
         {msgs.length === 0 ? (
           <>
             <div className="advise" style={{ marginTop: 4 }}>
-              <b>Ask Kolo</b>
+              <b>Ask Braid</b>
               Ask about your money in plain words. Every figure in the answer
-              comes straight from the engine — Kolo narrates, it never does the
+              comes straight from the engine — Braid narrates, it never does the
               sums itself.
             </div>
             <div className="suggest">
@@ -139,7 +139,7 @@ export function Ask() {
               )}
               {m.flagged && (
                 <div className="ask-flag">
-                  ⚑ Kolo&apos;s phrasing used a figure the engine couldn&apos;t
+                  ⚑ Braid&apos;s phrasing used a figure the engine couldn&apos;t
                   verify, so the answer above is the engine&apos;s own read.
                   {m.rejected && (
                     <>

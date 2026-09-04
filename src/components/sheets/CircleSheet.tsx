@@ -38,7 +38,7 @@ export function CircleSheet() {
     return (
       <Sheet title="Circle created" onClose={close}>
         <p className="abouttext">
-          Share this code with the people in your circle. They open Kolo, go to Circles, tap{" "}
+          Share this code with the people in your circle. They open Braid, go to Circles, tap{" "}
           <b>Find</b> and enter it.
         </p>
         <div

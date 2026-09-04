@@ -61,7 +61,7 @@ export function AppShell() {
               <span style={{ width: 16, height: 16, display: "inline-flex" }}>
                 {Icon.coin}
               </span>
-              Kolo
+              Braid
             </div>
             <div className="topctx">{titles[tab]}</div>
             <div style={{ width: 34 }} />

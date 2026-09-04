@@ -294,7 +294,7 @@ function PasteForm() {
         fxRows.length +
           " in foreign currency (" +
           Array.from(new Set(fxRows.map((r: any) => r.currency))).join(", ") +
-          ") — Kolo only reads naira, add " +
+          ") — Braid only reads naira, add " +
           (fxRows.length === 1 ? "it" : "them") +
           " by hand"
       );
@@ -338,7 +338,7 @@ function PasteForm() {
   return (
     <div>
       <p className="hint" style={{ marginBottom: 8 }}>
-        Kolo reads the pasted text and only keeps amounts that appear in it.
+        Braid reads the pasted text and only keeps amounts that appear in it.
       </p>
       <Field label="Alert text">
         <textarea

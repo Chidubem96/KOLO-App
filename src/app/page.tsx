@@ -30,7 +30,7 @@ export default function Page() {
       <div className="authwrap">
         <div className="authcard">
           <div className="brand" style={{ fontSize: 24, marginBottom: 10 }}>
-            {/* icon omitted */}Kolo
+            {/* icon omitted */}Braid
           </div>
           <p className="abouttext">
             The app isn&apos;t configured yet. Copy{" "}

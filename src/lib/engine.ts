@@ -1047,6 +1047,6 @@ export const DOLLAR_PRODUCTS = [
     liq: "Instant",
     desc: "A small Bitcoin/Ether basket for members who want upside. Hard-capped at 10% of your balance.",
     long:
-      "A market-cap-weighted basket of Bitcoin and Ether. Historically high growth over long periods and severe drops in between. Kolo caps this at 10% of your available balance so a bad run can't touch the money your circle is counting on.",
+      "A market-cap-weighted basket of Bitcoin and Ether. Historically high growth over long periods and severe drops in between. Braid caps this at 10% of your available balance so a bad run can't touch the money your circle is counting on.",
   },
 ];

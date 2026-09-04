@@ -41,7 +41,7 @@ export function Auth() {
     <div className="authwrap">
       <div className="authcard">
         <div className="wordmark-lg">
-          k<b>o</b>lo
+          br<b>a</b>id
         </div>
         <p className="pull" style={{ margin: "14px 0 18px" }}>
           Save in circles. Know what&apos;s yours to spend.

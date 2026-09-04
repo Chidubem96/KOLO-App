@@ -138,7 +138,7 @@ export function Grow() {
       <p className="disclosure">
         Estimated returns are illustrative and <b>not guaranteed</b>. Naira funds carry issuer and
         interest-rate risk. Dollar and stablecoin options carry currency and platform risk and are
-        not NDIC-insured. The growth sleeve is volatile and capped at 10% of your balance. Kolo is
+        not NDIC-insured. The growth sleeve is volatile and capped at 10% of your balance. Braid is
         not a licensed investment adviser; this prototype shows figures for illustration only and
         moves no real money.
       </p>

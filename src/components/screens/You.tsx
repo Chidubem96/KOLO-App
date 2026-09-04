@@ -123,7 +123,7 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
             {Icon.ask}
           </span>
           <div className="grow">
-            <div className="t">Ask Kolo</div>
+            <div className="t">Ask Braid</div>
             <div className="s">The guardrailed money assistant</div>
           </div>
           <span className="chev">{Icon.chev}</span>
@@ -177,7 +177,7 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
         Sign out
       </button>
       <p className="disclosure" style={{ textAlign: "center" }}>
-        Kolo V1 · working name · figures are yours, held in your account · no real money moves
+        Braid V1 · working name · figures are yours, held in your account · no real money moves
       </p>
     </div>
   );
