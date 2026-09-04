@@ -53,7 +53,7 @@ export function Auth() {
               <label>Your name</label>
               <input
                 value={name}
-                placeholder="e.g. Ngozi"
+                placeholder="e.g. Chikamso"
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
