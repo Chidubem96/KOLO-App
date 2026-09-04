@@ -437,6 +437,44 @@ export function safeToSpend(d: KoloData): StSResult {
   };
 }
 
+/* ---------- warn-before-miss ----------
+   An unpaid contribution due soon (or overdue) that the current numbers say
+   probably will not clear. Surfaced days early so the member can act. */
+export interface AtRiskContribution {
+  circleId: string;
+  circle: string;
+  amount: number;
+  due: Date;
+  days: number; // days until due; negative = overdue
+  shortBy: number; // liquid shortfall against the amount
+}
+export function contributionsAtRisk(
+  d: KoloData,
+  r: StSResult
+): AtRiskContribution[] {
+  const out: AtRiskContribution[] = [];
+  for (const c of d.circles) {
+    if (!c.members.some((m) => m.userId === d.userId)) continue;
+    const cur = circleCycleIndex(c);
+    const st = circleContribStatus(c, cur, d.userId);
+    if (st.paid) continue;
+    const days = daysBetween(todayStr(), st.due);
+    if (days > 5) continue; // only the 5-day window, plus anything overdue
+    const cantAfford = r.availableLiquid < c.amount;
+    const overCommitted = r.sts < 0;
+    if (!cantAfford && !overCommitted) continue;
+    out.push({
+      circleId: c.id,
+      circle: c.name,
+      amount: c.amount,
+      due: st.due,
+      days,
+      shortBy: Math.max(0, c.amount - r.availableLiquid),
+    });
+  }
+  return out.sort((a, b) => a.days - b.days);
+}
+
 export function homeNudge(d: KoloData, r: StSResult): { tone: string; text: string } {
   for (const c of d.circles) {
     if (!c.members.some((m) => m.userId === d.userId)) continue;

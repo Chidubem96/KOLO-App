@@ -7,6 +7,7 @@ import {
   circleCycleDue,
   circleCycleIndex,
   circlePot,
+  contributionsAtRisk,
   homeNudge,
   monthlyAccrual,
   payoutRecipient,
@@ -28,6 +29,7 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
   const r = safeToSpend(d);
   const [open, setOpen] = useState<string | null>(null);
   const neg = r.sts < 0;
+  const atRisk = contributionsAtRisk(d, r);
 
   const rows = [
     {
@@ -138,6 +140,43 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
           <span />
         </div>
       </div>
+
+      {atRisk.length > 0 && (
+        <div
+          className="card"
+          style={{ marginTop: 14, borderColor: "rgba(232,184,75,.4)" }}
+        >
+          <p className="kicker" style={{ color: "var(--gold)", marginBottom: 8 }}>
+            {atRisk.length === 1 ? "A contribution" : atRisk.length + " contributions"} may not
+            clear
+          </p>
+          {atRisk.map((a) => (
+            <button
+              key={a.circleId}
+              className="lrow"
+              onClick={() => sheet.open(<CircleDetail circleId={a.circleId} />)}
+            >
+              <div className="grow">
+                <div className="t" style={{ fontSize: 13.5 }}>
+                  {a.circle} · {fmt(a.amount)}
+                </div>
+                <div className="s">
+                  {a.days < 0
+                    ? "overdue " + fmtDate(a.due)
+                    : a.days === 0
+                    ? "due today"
+                    : "due " + fmtDate(a.due) + " · in " + a.days + " day" + (a.days === 1 ? "" : "s")}
+                  {a.shortBy > 0 ? " · liquid short by " + fmt(a.shortBy) : " · you're over-committed this period"}
+                </div>
+              </div>
+              <span className="chev">{Icon.chev}</span>
+            </button>
+          ))}
+          <p className="hint" style={{ marginTop: 8 }}>
+            Move money into a liquid account, pause a goal, or talk to the circle before the date.
+          </p>
+        </div>
+      )}
 
       {neg && (
         <div className="card" style={{ marginTop: 14, borderColor: "rgba(255,92,108,.3)" }}>
