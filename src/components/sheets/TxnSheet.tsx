@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
-import { addTxns } from "@/lib/api";
+import { addObligation, addTxns } from "@/lib/api";
 import { logEvent } from "@/lib/events";
 import {
   CATS,
@@ -11,7 +11,7 @@ import {
   parseAlerts,
   parseCSV,
 } from "@/lib/engine";
-import { addDays, iso, parseMoney, todayD, todayStr } from "@/lib/format";
+import { addDays, daysAgo, iso, parseMoney, todayD, todayStr } from "@/lib/format";
 import { CatSelect, Field, MoneyInput, Sheet } from "../ui";
 import type { DraftTxn } from "@/lib/types";
 
@@ -159,7 +159,11 @@ function normalizeDraft(x: any): DraftTxn {
   };
 }
 
+const dkey = (d: { amount: number; date: string; note: string }) =>
+  d.amount + "|" + d.date + "|" + (d.note || "").toLowerCase().slice(0, 24);
+
 function PasteForm() {
+  const { data } = useKolo();
   const [text, setText] = useState("");
   const [status, setStatus] = useState("");
   const [drafts, setDrafts] = useState<DraftTxn[] | null>(null);
@@ -186,48 +190,93 @@ function PasteForm() {
     } catch {
       rows = [];
     }
-    // Always run the regex parser too and merge in any amount the model missed,
-    // so rows are never silently dropped.
+    // Also run the regex parser and merge in anything the model missed.
     const regexRows = parseAlerts(raw);
     const seen = new Set(
-      rows.map((r: any) => Math.round(Math.abs(Number(r.amount) || 0)))
+      rows
+        .filter((r: any) => Number(r.amount) > 0)
+        .map((r: any) => Math.round(Math.abs(Number(r.amount))))
     );
-    for (const rr of regexRows)
-      if (!seen.has(rr.amount)) {
+    for (const rr of regexRows) {
+      if (rr.currency || rr.amount <= 0) rows.push(rr);
+      else if (!seen.has(rr.amount)) {
         rows.push(rr);
         seen.add(rr.amount);
       }
+    }
     setBusy(false);
 
-    const ds = rows
-      .map(normalizeDraft)
+    // 1. foreign currency — never coerced into naira
+    const fxRows = rows.filter(
+      (r: any) => r.currency && String(r.currency).toUpperCase() !== "NGN"
+    );
+    // 2. couldn't read an amount at all
+    const blankRows = rows.filter(
+      (r: any) => !r.currency && !(Number(r.amount) > 0)
+    );
+    // 3. usable naira debits that actually appear in the pasted text
+    let ds = rows
       .filter(
-        (d) =>
-          d.direction !== "credit" &&
-          d.amount > 0 &&
-          amountInSource(d.amount, raw)
-      );
+        (r: any) =>
+          !r.currency &&
+          Number(r.amount) > 0 &&
+          r.direction !== "credit"
+      )
+      .map(normalizeDraft)
+      .filter((d) => d.amount > 0 && amountInSource(d.amount, raw));
 
-    // how many distinct debit-looking amounts the regex could see in the text
-    const regexDebits = regexRows.filter((r) => r.direction !== "credit").length;
-    const dropped = Math.max(0, regexDebits - ds.length);
+    // dedupe within the batch, and against transactions logged in the last 10 days
+    const recent = new Set(
+      (data?.transactions ?? [])
+        .filter((t) => Math.abs(daysAgo(t.date)) <= 10)
+        .map((t) => dkey({ amount: t.amount, date: t.date, note: t.note }))
+    );
+    const batch = new Set<string>();
+    ds = ds.map((d) => {
+      const k = dkey(d);
+      const isDupe = batch.has(k) || recent.has(k);
+      batch.add(k);
+      return isDupe ? { ...d, dupe: true, include: false } : d;
+    });
+    const dupeCount = ds.filter((d) => d.dupe).length;
 
-    if (!ds.length) {
+    if (!ds.length && !fxRows.length && !blankRows.length) {
       setStatus("No debit found. Paste the alert exactly as your bank sent it.");
       return;
     }
-    setStatus(
-      ds.length +
-        " read" +
-        (dropped > 0
-          ? " — but " +
-            dropped +
-            " more amount" +
-            (dropped === 1 ? "" : "s") +
-            " looked like a debit and couldn't be parsed. Add those by hand or paste them again on their own."
-          : ". Check each category and add.")
-    );
-    setDrafts(ds);
+
+    const parts: string[] = [];
+    if (ds.length)
+      parts.push(
+        ds.length -
+          dupeCount +
+          " ready below" +
+          (dupeCount ? " · " + dupeCount + " possible duplicate" + (dupeCount === 1 ? "" : "s") + " unticked" : "")
+      );
+    if (fxRows.length)
+      parts.push(
+        fxRows.length +
+          " in foreign currency (" +
+          Array.from(new Set(fxRows.map((r: any) => r.currency))).join(", ") +
+          ") — Kolo only reads naira, add " +
+          (fxRows.length === 1 ? "it" : "them") +
+          " by hand"
+      );
+    if (blankRows.length) {
+      const snip = blankRows
+        .slice(0, 2)
+        .map((r: any) => '"' + String(r.note || "").slice(0, 32) + '…"')
+        .join(", ");
+      parts.push(
+        blankRows.length +
+          " alert" +
+          (blankRows.length === 1 ? "" : "s") +
+          " had no readable amount: " +
+          snip
+      );
+    }
+    setStatus(parts.join(". ") + ".");
+    setDrafts(ds.length ? ds : []);
   };
 
   return (
@@ -401,6 +450,11 @@ function DraftReview({
               style={{ flex: 1 }}
               onChange={(e) => patch(i, { note: e.target.value })}
             />
+            {d.dupe && (
+              <span className="chip" style={{ color: "var(--warn)" }}>
+                possible duplicate
+              </span>
+            )}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <div className="money-input" style={{ flex: 1 }}>
@@ -425,6 +479,28 @@ function DraftReview({
               onChange={(v) => patch(i, { category: v })}
             />
           </div>
+          {(d.person ||
+            ["home", "rent", "levy", "school", "faith"].includes(
+              d.category || ""
+            )) && (
+            <label
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                fontSize: 12.5,
+                color: "var(--mut)",
+                marginTop: 8,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={!!d.recurring}
+                onChange={(e) => patch(i, { recurring: e.target.checked })}
+              />
+              This repeats every month — track it as an obligation
+            </label>
+          )}
         </div>
       ))}
       <button
@@ -447,6 +523,24 @@ function DraftReview({
               period: null,
             }))
           );
+          // "one question, asked once" — rows the user marked as monthly
+          // become obligations straight away, no 3-occurrence wait.
+          for (const d of keep.filter((x) => x.recurring)) {
+            await addObligation(data!.userId, {
+              label: (d.note || "Monthly commitment").trim(),
+              kind: d.person ? "transfer" : "bill",
+              amount: d.amount,
+              cadence: "monthly",
+              anchorDay: new Date(d.date).getDate() || 1,
+              active: true,
+              source: "confirmed",
+              category: d.category || (d.person ? "home" : "rent"),
+              autoPost: false,
+              since: todayStr(),
+              sig: null,
+            });
+            logEvent("obligation_added", { amount: d.amount, source: "paste_confirm" });
+          }
           await reload();
           close();
         }}

@@ -50,9 +50,10 @@ export function guessCategory(text: string): string | null {
   const rules: [RegExp, string][] = [
     [/uber|bolt| taxi|fuel|petrol|filling|nnpc|transport|\bbrt\b|\bkeke\b|danfo/, "transport"],
     [/mtn|airtel|\bglo\b|9 ?mobile|data bundle|airtime|recharge|vtu/, "data"],
-    [/diesel|generator|\bgen\b|litres of/, "generator"],
+    [/diesel|generator|\bgen set\b|genset|litres of (diesel|petrol)/, "generator"],
     [/school|tuition| fees|lesson|waec|jamb|neco/, "school"],
-    [/\brent\b|landlord|phcn|phed|ikedc|eko ?elec|aedc|kaedco|electric|prepaid meter|\bdstv\b|\bgotv\b|startimes|water board/, "rent"],
+    [/\brent\b|landlord|phcn|phed|ikedc|eko ?elec|aedc|kaedco|kedco|bedc|ibedc|jedc|electric|prepaid meter|prepaid token|nepa|power token|units? token|\bdstv\b|\bgotv\b|startimes|water board|lawma|waste/, "rent"],
+    [/netflix|spotify|showmax|youtube ?premium|apple\.com\/bill|apple music|prime video|amazon prime|icloud|google ?(one|storage)|canva|adobe|chatgpt|openai|notion|dropbox|linkedin premium/, "shopping"],
     [/church|mosque|tithe|offering|zakat|\bseed\b|winners|deeper life/, "faith"],
     [/\blevy\b|\bdues\b|association|\bunion\b|estate due|market assoc/, "levy"],
     [/hospital|pharmacy|chemist|clinic|\bdrug|medic|lab test/, "health"],
@@ -78,7 +79,10 @@ export interface RawDraft {
   category: string | null;
   note: string;
   is_person?: boolean;
+  currency?: string; // set when the alert is NOT in naira — do not store the number
 }
+
+const FX = /\b(USD|GBP|EUR|CAD|AUD|ZAR|GHS|KES|AED|CNY|JPY|INR)\b|(?<![A-Za-z])[$£€](?=\s?\d)/;
 
 export function parseAlerts(text: string): RawDraft[] {
   const blocks = text
@@ -90,6 +94,20 @@ export function parseAlerts(text: string): RawDraft[] {
     const am = b.match(
       /(?:NGN|N|₦)\s?([\d]{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/i
     );
+    const fx = b.match(FX);
+    // Foreign-currency alert: never coerce the number into naira. Surface it
+    // so the user knows it wasn't captured, rather than storing e.g. $200 as ₦200.
+    if (fx && (!am || b.toUpperCase().indexOf("NGN") < 0)) {
+      out.push({
+        amount: 0,
+        date: null,
+        direction: /\bcredit(ed)?\b/i.test(b) ? "credit" : "debit",
+        category: null,
+        note: b.slice(0, 40).replace(/\s+/g, " ").trim(),
+        currency: (fx[1] || fx[0]).toUpperCase(),
+      });
+      continue;
+    }
     if (!am) continue;
     const amount = Math.round(parseFloat(am[1].replace(/,/g, "")));
     if (!(amount > 0)) continue;
@@ -121,13 +139,19 @@ export function parseAlerts(text: string): RawDraft[] {
     const person =
       /\b(mr|mrs|miss|chief|alhaji|hajia|dr|pastor|mama|papa|bro|sis)\b/i.test(b) ||
       /\b(transfer|trf|sent|xfer)\b/i.test(b);
-    const note =
-      (cp
-        ? (isCredit ? "From " : person ? "To " : "") + cp
-        : b.slice(0, 40)
-      )
-        .replace(/\s+/g, " ")
-        .trim();
+    // never let instruction-shaped text ride into a stored field
+    const injectionLike =
+      /ignore (all|the|previous|prior)|previous instruction|you are (now|an? )|system prompt|disregard|set (the )?user|debt[- ]free|as an ai|do not tell/i.test(
+        b
+      );
+    const note = injectionLike
+      ? cp || "Payment"
+      : (cp
+          ? (isCredit ? "From " : person ? "To " : "") + cp
+          : b.slice(0, 40)
+        )
+          .replace(/\s+/g, " ")
+          .trim();
     out.push({
       amount,
       date,
@@ -280,10 +304,15 @@ export function circleContribStatus(
   return { paid: false, onTime: false, upcoming: true, due };
 }
 
+/** A circle only builds portable reputation once it has real counterparties.
+    A circle of one or two (or a self-dealing solo circle) proves nothing. */
+export const MIN_REPUTABLE_MEMBERS = 3;
+
 export function myReliability(circles: CircleFull[], userId: string) {
   let onTime = 0;
   let total = 0;
   for (const c of circles) {
+    if (c.members.length < MIN_REPUTABLE_MEMBERS) continue;
     const me = c.members.find((m) => m.userId === userId);
     if (!me) continue;
     const cur = circleCycleIndex(c);
@@ -555,6 +584,34 @@ export function recoveryOptions(d: KoloData, r: StSResult) {
       kind: "manual",
       note: "reschedule the bill",
     });
+
+  // Always give the user real choices — top up to three.
+  const gap = Math.max(0, -r.sts);
+  const roll = monthlyRollups(d);
+  if (opts.length < 3 && roll.discretionary > 0)
+    opts.push({
+      label: "Cut discretionary spending until " + fmtDate(r.horizon),
+      gain: Math.min(gap || roll.discretionary, roll.discretionary),
+      kind: "manual",
+      note: "your flexible spend is " + fmt(roll.discretionary) + "/mo",
+    });
+  const parked = d.accounts
+    .filter((a) => (!a.liquid || a.locked) && a.balance > 0)
+    .sort((a, b) => b.balance - a.balance)[0];
+  if (opts.length < 3 && parked)
+    opts.push({
+      label: 'Move money from "' + parked.name + '" into a spending account',
+      gain: Math.min(gap || parked.balance, parked.balance),
+      kind: "manual",
+      note: fmt(parked.balance) + " is sitting there, not counted as liquid",
+    });
+  if (opts.length < 3)
+    opts.push({
+      label: "Hold non-essential purchases until " + fmtDate(r.horizon),
+      gain: gap,
+      kind: "manual",
+      note: "the gap clears when your next income lands",
+    });
   return { gap: -r.sts, opts };
 }
 
@@ -732,6 +789,7 @@ export function payoutRecipient(c: CircleFull, cycleIdx: number) {
 export function cyclesCompletedByUser(circles: CircleFull[], userId: string) {
   let n = 0;
   for (const c of circles) {
+    if (c.members.length < MIN_REPUTABLE_MEMBERS) continue;
     const me = c.members.find((m) => m.userId === userId);
     if (!me) continue;
     const cur = circleCycleIndex(c);

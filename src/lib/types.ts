@@ -210,4 +210,6 @@ export interface DraftTxn {
   note: string;
   person: boolean;
   include: boolean;
+  dupe?: boolean; // matches a row already in this batch or a recent transaction
+  recurring?: boolean; // user said this repeats monthly -> also create an obligation
 }

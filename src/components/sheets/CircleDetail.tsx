@@ -13,6 +13,7 @@ import {
   addTxns,
   approveJoin,
   declineJoin,
+  deleteCircle,
   leaveCircle,
   recordContribution,
   resolveDispute,
@@ -480,18 +481,56 @@ export function CircleDetail({ circleId }: { circleId: string }) {
       )}
 
       <div className="divider" />
-      <button
-        className="btn danger full"
-        onClick={async () => {
-          if (confirm("Leave this circle?")) {
-            await leaveCircle(c.id, uid);
-            await reload();
-            close();
-          }
-        }}
-      >
-        Leave circle
-      </button>
+      {(() => {
+        const sole = c.members.length <= 1;
+        const stuckOrganiser = isOrganiser && !sole;
+        if (sole || isOrganiser)
+          return (
+            <>
+              <button
+                className="btn danger full"
+                onClick={async () => {
+                  const msg = sole
+                    ? "Delete this circle? It has no other members."
+                    : "Delete this circle for all " +
+                      c.members.length +
+                      " members? This can't be undone.";
+                  if (!confirm(msg)) return;
+                  try {
+                    await deleteCircle(c.id);
+                    toast("Circle deleted");
+                    await reload();
+                    close();
+                  } catch {
+                    toast("Couldn't delete — try again");
+                  }
+                }}
+              >
+                Delete circle
+              </button>
+              {stuckOrganiser && (
+                <p className="hint" style={{ marginTop: 8 }}>
+                  You&apos;re the organiser, so you can&apos;t just leave — either
+                  delete the circle or hand it over first.
+                </p>
+              )}
+            </>
+          );
+        return (
+          <button
+            className="btn danger full"
+            onClick={async () => {
+              if (!confirm("Leave this circle?")) return;
+              await leaveCircle(c.id, uid);
+              toast("You've left " + c.name);
+              await reload();
+              close();
+            }}
+          >
+            Leave circle
+          </button>
+        );
+      })()}
     </Sheet>
   );
 }

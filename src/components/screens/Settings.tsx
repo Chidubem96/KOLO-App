@@ -91,7 +91,7 @@ export function Settings({ embedded }: { embedded?: boolean }) {
           min={0}
           max={1.5}
           step={0.1}
-          defaultValue={p.bufferK}
+          value={p.bufferK}
           onChange={(e) => set({ buffer_k: Number(e.target.value) })}
         />
       </Field>

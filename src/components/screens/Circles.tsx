@@ -66,8 +66,8 @@ export function Circles() {
             <div className="big">Your reliability</div>
             <div className="small">
               {rel.rated
-                ? rel.onTime + " / " + rel.total + " contributions on time · portable to any circle"
-                : "Unrated — complete a cycle to build it"}
+                ? rel.onTime + " of " + rel.total + " contributions on time · portable to any circle"
+                : "Unrated — finish a cycle in a circle with 3+ members to build it"}
             </div>
           </div>
         </div>

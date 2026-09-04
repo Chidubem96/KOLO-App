@@ -4,7 +4,6 @@ import { useSheet } from "../sheet-context";
 import {
   circleContribStatus,
   circleCycleIndex,
-  cyclesCompletedByUser,
   monthlyRollups,
   myReliability,
 } from "@/lib/engine";
@@ -24,7 +23,6 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
   const d = data!;
   const sheet = useSheet();
   const rel = myReliability(d.circles, d.userId);
-  const done = cyclesCompletedByUser(d.circles, d.userId);
   const roll = monthlyRollups(d);
   const p = d.profile;
 
@@ -54,13 +52,11 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
             <div className="big">Your reliability</div>
             <div className="small">
               {rel.rated
-                ? done +
-                  " cycle" +
-                  (done === 1 ? "" : "s") +
-                  " completed · " +
-                  (rel.total - rel.onTime) +
-                  " late or missed. Portable to any circle you request."
-                : "No completed cycles yet. Your score appears once you finish your first contribution cycle — until then you show as unrated to organisers."}
+                ? rel.onTime +
+                  " of " +
+                  rel.total +
+                  " contributions on time across circles with 3+ members. Portable to any circle you request."
+                : "No completed cycles yet in a circle with 3+ members. Your score appears once you finish your first — until then you show as unrated to organisers."}
             </div>
           </div>
         </div>

@@ -119,7 +119,25 @@ export function CircleSheet() {
           <button
             className="btn full"
             onClick={() => {
-              if (!d.name.trim() || d.amount <= 0) return toast("Name and amount needed");
+              if (!d.name.trim() || d.amount <= 0)
+                return toast("Name and amount needed");
+              if (d.amount > 20_000_000)
+                return toast(
+                  "That contribution looks too large — cap is ₦20,000,000 per turn."
+                );
+              if (
+                d.amount > 2_000_000 &&
+                !confirm(
+                  "Each member pays " +
+                    fmt(d.amount) +
+                    " per " +
+                    (d.cadence === "weekly" ? "week" : "month") +
+                    ". That's a " +
+                    fmt(d.amount * d.maxSize) +
+                    " pot. Is that right?"
+                )
+              )
+                return;
               setStep(2);
             }}
           >

@@ -66,7 +66,10 @@ export function buildAskContext(d: KoloData, question?: string) {
       goal_accruals_this_period: r.goalTotal,
       volatility_buffer: r.buffer.value,
       buffer_k: d.profile.bufferK,
-      buffer_label: "k = " + d.profile.bufferK + " (" + r.buffer.basis + ")",
+      buffer_note:
+        "the buffer is k × spending volatility; k is " +
+        d.profile.bufferK +
+        ", set on the Settings slider. There is no other buffer setting.",
     },
     monthly_pattern: {
       income: roll.income,

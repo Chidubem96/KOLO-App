@@ -579,6 +579,12 @@ export async function leaveCircle(circleId: string, userId: string) {
     .eq("circle_id", circleId)
     .eq("user_id", userId);
 }
+export async function deleteCircle(circleId: string) {
+  // organiser only (RLS: "organiser deletes circle"); members / contributions
+  // / requests / disputes cascade on delete.
+  const { error } = await supabase().from("circles").delete().eq("id", circleId);
+  if (error) throw error;
+}
 export async function setMemberAutoDebit(
   circleId: string,
   userId: string,

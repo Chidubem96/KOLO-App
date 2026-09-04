@@ -107,7 +107,7 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
                       min={0}
                       max={1.5}
                       step={0.1}
-                      defaultValue={d.profile.bufferK}
+                      value={d.profile.bufferK}
                       style={{ width: "100%", accentColor: "var(--brand)" }}
                       onChange={async (e) => {
                         await saveProfile(d.userId, { buffer_k: Number(e.target.value) });
@@ -178,12 +178,18 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
         </div>
       )}
 
-      {neg && (
+      {neg && (() => {
+        const rec = recoveryOptions(d, r).opts;
+        return (
         <div className="card" style={{ marginTop: 14, borderColor: "rgba(255,92,108,.3)" }}>
           <p className="kicker" style={{ color: "var(--neg)", marginBottom: 8 }}>
-            Three ways back — pick one
+            {rec.length >= 3
+              ? "Three ways back — pick one"
+              : rec.length === 2
+              ? "Two ways back — pick one"
+              : "One move that closes the gap"}
           </p>
-          {recoveryOptions(d, r).opts.map((o, i) => (
+          {rec.map((o, i) => (
             <div key={i} className="lrow" style={{ cursor: "default" }}>
               <div className="grow">
                 <div className="t" style={{ fontSize: 13 }}>
@@ -212,7 +218,8 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
 
       {recurringPosted > 0 && (
         <div

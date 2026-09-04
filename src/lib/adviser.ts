@@ -20,9 +20,14 @@ export function allowedNumbers(ctx: unknown): Set<string> {
       set.add(String(n));
       set.add(n.toLocaleString("en-NG"));
       set.add(n.toLocaleString("en-US"));
-      // tolerate the model rounding a real engine figure when it narrates
-      // (e.g. context 85,700 -> "about ₦86,000"); still anchored to a real number
-      if (n >= 10000) set.add(String(Math.round(n / 1000) * 1000));
+      // context figures are already quantised to the nearest ₦100, so tolerate
+      // that rounding but nothing coarser — a "₦86,000" for an ₦85,700 figure
+      // should still be caught and the model told to say "about".
+      if (n >= 1000) {
+        const h = Math.round(n / 100) * 100;
+        set.add(String(h));
+        set.add(h.toLocaleString("en-NG"));
+      }
     } else if (typeof v === "string") {
       (v.match(/\d[\d,]*/g) || []).forEach((m) => set.add(m.replace(/,/g, "")));
     } else if (v && typeof v === "object") {
@@ -64,11 +69,11 @@ export function enforce(
 export const ASK_RULES = `You are Kolo, a personal-finance assistant for a user in Nigeria. Below is a JSON object of figures ALREADY COMPUTED by Kolo's deterministic engine, then the user's question.
 
 HARD RULES — breaking any one fails the answer:
-1. Never state a naira amount or large number that is not already in the CONTEXT JSON or the user's question. Do not add, subtract, multiply or divide to make a new figure. Quote money figures exactly as they appear in context — do not round them. Small counts ("3 months", "8 members") are fine. If a good answer needs a figure you were not given, say exactly what Kolo needs to work it out (e.g. "tell me the trip cost and your travel month and I'll set the monthly figure").
+1. Never state a naira amount or large number that is not already in the CONTEXT JSON or the user's question. Do not add, subtract, multiply or divide to make a new figure. Quote money figures exactly as they appear in context — do not round, truncate or "tidy" them. If you ever shorten a figure (e.g. write ₦1,000,000,000,000 for ₦999,999,999,999), you MUST prefix it with "about" or "~". Small counts ("3 months", "8 members") are fine. If a good answer needs a figure you were not given, say exactly what Kolo needs to work it out.
 2. State the assumptions the answer rests on (context.assumptions) and invite the user to correct them.
 3. Nigerian English. Light Pidgin if the user writes Pidgin.
 4. You explain the engine's numbers. You never claim to have moved money or opened anything.
-5. Refer to the volatility buffer only as "k = <value>" using context.subtractions.buffer_k (or the ready phrase in context.subtractions.buffer_label). Never invent another label like "1x" or "1× setting".
+5. The volatility buffer has exactly one setting: k = context.subtractions.buffer_k (see context.subtractions.buffer_note). Never say the buffer has a second or "stored" value, never invent a label like "1x", and never tell the user two figures disagree — there is only k.
 
 HOW TO ANSWER:
 - Quick question ("what's my safe-to-spend", "can I afford X this week"): 2-4 sentences. Lead with the number. If something is off track, name the one lever that changes it, not encouragement.
