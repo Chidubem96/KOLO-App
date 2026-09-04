@@ -58,10 +58,16 @@ export function guessCategory(text: string): string | null {
     [/hospital|pharmacy|chemist|clinic|\bdrug|medic|lab test/, "health"],
     [/shoprite|\bspar\b|\bmart\b| market|grocery|restaurant|eatery|kitchen|\bbuka\b|chicken republic|kfc/, "food"],
     [/\bajo\b|esusu|adashe|contribution|thrift|cooperative|\bcoop\b|society/, "circle"],
-    [/salon|barb|boutique|fashion|jumia|konga|store|pos purchase/, "shopping"],
+    [/salon|barb|boutique|fashion|jumia|konga|store|pos purchase|\bpos\b|supermarket/, "shopping"],
   ];
   for (const [re, c] of rules) if (re.test(s)) return c;
   return null;
+}
+
+/** Never returns null — falls back to a sensible bucket so a parsed row is
+    always usable without the user having to pick a category. */
+export function categoriseOr(text: string, isPerson = false): string {
+  return guessCategory(text) || (isPerson ? "home" : "other");
 }
 
 export interface RawDraft {
@@ -102,18 +108,34 @@ export function parseAlerts(text: string): RawDraft[] {
         date = iso(d);
       }
     }
-    const cp = (b.match(
-      /\b(?:to|at|from|@)\s+([A-Za-z0-9][A-Za-z0-9 &.\-'/]{2,34})/i
-    ) || [])[1];
-    const note = (cp || b.slice(0, 40)).replace(/\s+/g, " ").trim();
+    // direction-aware counterparty: on a debit the "other" party is who you
+    // paid ("to X"); on a credit it's who paid you ("from X"). Reading the
+    // wrong side flips the transaction and corrupts every downstream figure.
+    const grab = (re: RegExp) => (b.match(re) || [])[1]?.replace(/\s+/g, " ").trim();
+    const toName = grab(/\bto\s+([A-Za-z0-9][A-Za-z0-9 &.\-'/]{2,34})/i);
+    const atName = grab(/\bat\s+([A-Za-z0-9][A-Za-z0-9 &.\-'/]{2,34})/i);
+    const fromName = grab(/\bfrom\s+([A-Za-z0-9][A-Za-z0-9 &.\-'/]{2,34})/i);
+    const cp = isCredit
+      ? fromName || toName || atName || ""
+      : toName || atName || fromName || "";
+    const person =
+      /\b(mr|mrs|miss|chief|alhaji|hajia|dr|pastor|mama|papa|bro|sis)\b/i.test(b) ||
+      /\b(transfer|trf|sent|xfer)\b/i.test(b);
+    const note =
+      (cp
+        ? (isCredit ? "From " : person ? "To " : "") + cp
+        : b.slice(0, 40)
+      )
+        .replace(/\s+/g, " ")
+        .trim();
     out.push({
       amount,
       date,
       direction: isCredit ? "credit" : "debit",
-      counterparty: cp || "",
+      counterparty: cp,
       category: guessCategory(b),
       note,
-      is_person: /\b(mr|mrs|miss|chief|alhaji)\b/i.test(b),
+      is_person: person,
     });
   }
   return out;
@@ -274,7 +296,14 @@ export function myReliability(circles: CircleFull[], userId: string) {
       } else if (st.late) total++;
     }
   }
-  return { score: total === 0 ? 100 : Math.round((100 * onTime) / total), onTime, total };
+  // No completed cycles => unrated. Trust is earned; an applicant with no
+  // history must not display as a perfect score.
+  return {
+    score: total === 0 ? null : Math.round((100 * onTime) / total),
+    rated: total > 0,
+    onTime,
+    total,
+  };
 }
 
 /* ---------- buffer + rollups ---------- */

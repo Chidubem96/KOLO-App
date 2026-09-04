@@ -30,13 +30,17 @@ export async function POST(req: NextRequest) {
         {
           role: "user",
           content:
-            "Extract every money transaction from these Nigerian bank / wallet alert messages. " +
+            "Extract EVERY money transaction from these Nigerian bank / wallet alert messages. " +
+            "Do not skip any — if the text has five debit/credit lines, return five objects. " +
             "Reply with ONLY a JSON array (no prose). Each element: " +
             '{"amount": number with no currency symbol or commas, "date": "YYYY-MM-DD" or null, ' +
-            '"direction": "debit" or "credit", "counterparty": string, ' +
-            '"category": one of [' +
+            '"direction": "debit" or "credit", ' +
+            '"counterparty": the OTHER party only — for a debit, who received the money; for a credit, who sent it; never the account holder\'s own name, ' +
+            '"category": ALWAYS one of [' +
             CATS.map((c) => c.id).join(", ") +
-            '] or null, "is_person": boolean, "note": short label}. ' +
+            '] — pick the closest fit, use "other" only if nothing matches, never null, ' +
+            '"is_person": true if the counterparty is a person rather than a business, ' +
+            '"note": short label — e.g. "To Mama" for a transfer out, the merchant name for a purchase}. ' +
             "Only use amounts that appear verbatim in the text — never calculate one. " +
             "If there are none, reply []. Messages:\n\n" +
             raw,

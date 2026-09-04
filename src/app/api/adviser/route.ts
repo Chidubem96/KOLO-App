@@ -1,6 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
-import { ASK_RULES, enforce, deterministicFallback } from "@/lib/adviser";
+import {
+  ASK_RULES,
+  enforce,
+  deterministicFallback,
+  isAdviceSeeking,
+  looksLikeRecommendation,
+} from "@/lib/adviser";
 
 export const runtime = "nodejs";
 export const maxDuration = 45;
@@ -68,6 +74,15 @@ export async function POST(req: NextRequest) {
 
     if (!text)
       return NextResponse.json({ answer: deterministicFallback(context, question), flagged: false, action });
+
+    // Advice guard: if the question is asking where to put money and the reply
+    // reads like a recommendation, replace it with the neutral trade-off.
+    if (isAdviceSeeking(question) && looksLikeRecommendation(text))
+      return NextResponse.json({
+        answer: deterministicFallback(context, question),
+        flagged: true,
+        action,
+      });
 
     const check = enforce(text, context, question);
     return NextResponse.json(

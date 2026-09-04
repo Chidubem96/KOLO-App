@@ -61,13 +61,13 @@ export function Circles() {
 
       <div className="card" style={{ background: "var(--card-2)", borderColor: "transparent" }}>
         <div className="ring-wrap">
-          <Ring score={rel.total ? rel.score : 100} />
+          <Ring score={rel.score} />
           <div className="txt">
             <div className="big">Your reliability</div>
             <div className="small">
-              {rel.total
+              {rel.rated
                 ? rel.onTime + " / " + rel.total + " contributions on time · portable to any circle"
-                : "No history yet — complete a cycle to build it"}
+                : "Unrated — complete a cycle to build it"}
             </div>
           </div>
         </div>

@@ -66,6 +66,7 @@ export function buildAskContext(d: KoloData, question?: string) {
       goal_accruals_this_period: r.goalTotal,
       volatility_buffer: r.buffer.value,
       buffer_k: d.profile.bufferK,
+      buffer_label: "k = " + d.profile.bufferK + " (" + r.buffer.basis + ")",
     },
     monthly_pattern: {
       income: roll.income,
@@ -76,7 +77,8 @@ export function buildAskContext(d: KoloData, question?: string) {
     },
     goals,
     circles,
-    reliability_score: rel.total ? rel.score : null,
+    reliability_score: rel.score,
+    reliability_rated: rel.rated,
     budget_frame: budgetFrame(d),
     discretionary_by_category: discretionaryByCategory(d).slice(0, 6),
     assumptions: {

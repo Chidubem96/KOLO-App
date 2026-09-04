@@ -68,6 +68,7 @@ HARD RULES — breaking any one fails the answer:
 2. State the assumptions the answer rests on (context.assumptions) and invite the user to correct them.
 3. Nigerian English. Light Pidgin if the user writes Pidgin.
 4. You explain the engine's numbers. You never claim to have moved money or opened anything.
+5. Refer to the volatility buffer only as "k = <value>" using context.subtractions.buffer_k (or the ready phrase in context.subtractions.buffer_label). Never invent another label like "1x" or "1× setting".
 
 HOW TO ANSWER:
 - Quick question ("what's my safe-to-spend", "can I afford X this week"): 2-4 sentences. Lead with the number. If something is off track, name the one lever that changes it, not encouragement.
@@ -92,6 +93,15 @@ const naira = (n: number) =>
    Answers the KIND of question that was asked instead of always dumping
    Safe-to-Spend. Every figure here comes straight from the engine context. */
 export function deterministicFallback(ctx: any, question: string): string {
+  if (isAdviceSeeking(question)) {
+    return (
+      "Kolo can't tell you where to put your money or whether to go all-in — it isn't a licensed investment adviser. The plain trade-off: a higher expected return always comes with a real chance of loss, and money you'll need soon shouldn't carry that risk. Open the Grow tab to read each option's risk label, and keep your Safe to Spend (" +
+      naira(ctx?.safe_to_spend ?? 0) +
+      " until " +
+      (ctx?.horizon_date ?? "your next income") +
+      ") untouched."
+    );
+  }
   const g = ctx?.growth_projection;
   if (g) {
     return (
@@ -147,7 +157,15 @@ export function deterministicFallback(ctx: any, question: string): string {
       ". Open the Grow tab to compare each option's risk label."
     );
   }
-  return deterministicAnswer(ctx);
+  // Generic: the model's wording tripped the guardrail. Frame it honestly
+  // rather than answering a question nobody asked.
+  return (
+    "That answer used a figure Kolo couldn't trace back to your data, so here's only what the engine is certain of — your Safe to Spend is " +
+    naira(ctx.safe_to_spend) +
+    " until " +
+    ctx.horizon_date +
+    ". Ask again more specifically and Kolo will show the working."
+  );
 }
 
 export function deterministicAnswer(ctx: any): string {
@@ -168,6 +186,25 @@ export function deterministicAnswer(ctx: any): string {
     f(s.goal_accruals_this_period) +
     " in goal accruals and a " +
     f(s.volatility_buffer) +
-    " buffer."
+    " volatility buffer (k = " +
+    s.buffer_k +
+    ")."
+  );
+}
+
+/** Advice-seeking questions Kolo must not answer with a recommendation. */
+export function isAdviceSeeking(q: string): boolean {
+  return /\b(should i|shall i|is it (wise|smart|worth|a good idea|advisable)|do you (think|recommend|reckon)|would you|what should i do|is it ok to|any advice)\b/i.test(
+    q
+  ) &&
+    /\b(invest|investing|investment|put (it|everything|money|my money)|move (it|my money)|all[- ]?in|growth|sleeve|stock|shares?|crypto|bitcoin|dollar|domiciliary|mmf|money market|mutual fund|treasury|bond|t[- ]?bill|yield|portfolio|save it in|which (one|option|product))\b/i.test(
+      q
+    );
+}
+
+/** A model reply that reads like it is telling the user where to put money. */
+export function looksLikeRecommendation(text: string): boolean {
+  return /\b(you should (invest|put|move|buy|go)|i(?:'d| would) (recommend|suggest|say|go|put)|go all[- ]?in|put (it all|everything)|yes,? (put|invest|do it|go)|the best (option|choice) (is|for you)|i recommend)\b/i.test(
+    text
   );
 }

@@ -7,7 +7,7 @@ import { logEvent } from "@/lib/events";
 import {
   CATS,
   amountInSource,
-  guessCategory,
+  categoriseOr,
   parseAlerts,
   parseCSV,
 } from "@/lib/engine";
@@ -145,7 +145,10 @@ function normalizeDraft(x: any): DraftTxn {
     direction: x.direction === "credit" ? "credit" : "debit",
     category: CATS.some((c) => c.id === x.category)
       ? x.category
-      : guessCategory((x.note || "") + " " + (x.counterparty || "")),
+      : categoriseOr(
+          (x.note || "") + " " + (x.counterparty || ""),
+          !!x.is_person
+        ),
     note: (x.note || x.counterparty || "")
       .toString()
       .replace(/\s+/g, " ")
@@ -183,8 +186,19 @@ function PasteForm() {
     } catch {
       rows = [];
     }
-    if (!rows.length) rows = parseAlerts(raw);
+    // Always run the regex parser too and merge in any amount the model missed,
+    // so rows are never silently dropped.
+    const regexRows = parseAlerts(raw);
+    const seen = new Set(
+      rows.map((r: any) => Math.round(Math.abs(Number(r.amount) || 0)))
+    );
+    for (const rr of regexRows)
+      if (!seen.has(rr.amount)) {
+        rows.push(rr);
+        seen.add(rr.amount);
+      }
     setBusy(false);
+
     const ds = rows
       .map(normalizeDraft)
       .filter(
@@ -193,11 +207,26 @@ function PasteForm() {
           d.amount > 0 &&
           amountInSource(d.amount, raw)
       );
+
+    // how many distinct debit-looking amounts the regex could see in the text
+    const regexDebits = regexRows.filter((r) => r.direction !== "credit").length;
+    const dropped = Math.max(0, regexDebits - ds.length);
+
     if (!ds.length) {
       setStatus("No debit found. Paste the alert exactly as your bank sent it.");
       return;
     }
-    setStatus(ds.length + " found — check the category and add.");
+    setStatus(
+      ds.length +
+        " read" +
+        (dropped > 0
+          ? " — but " +
+            dropped +
+            " more amount" +
+            (dropped === 1 ? "" : "s") +
+            " looked like a debit and couldn't be parsed. Add those by hand or paste them again on their own."
+          : ". Check each category and add.")
+    );
     setDrafts(ds);
   };
 
@@ -314,7 +343,7 @@ function CsvMapper({ rows }: { rows: string[][] }) {
                 amount: Math.round(Math.abs(amt)),
                 date: dt,
                 direction: "debit" as const,
-                category: guessCategory(note),
+                category: categoriseOr(note),
                 note,
                 person: false,
                 include: amt > 0,

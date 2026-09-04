@@ -8,6 +8,17 @@ import { logEvent } from "@/lib/events";
 import { fmt } from "@/lib/format";
 import { GoalSheet } from "../sheets/GoalSheet";
 
+/** Render the small amount of markdown the model emits (**bold**, *italic*)
+    as real elements instead of showing the asterisks. */
+function rich(text: string) {
+  return text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((part, i) => {
+    if (/^\*\*[^*]+\*\*$/.test(part))
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (/^\*[^*]+\*$/.test(part)) return <em key={i}>{part.slice(1, -1)}</em>;
+    return <span key={i}>{part}</span>;
+  });
+}
+
 interface GoalAction {
   kind: "new_goal";
   name: string;
@@ -112,7 +123,7 @@ export function Ask() {
         ) : (
           msgs.map((m, i) => (
             <div key={i} className={"ask-msg " + (m.role === "user" ? "you" : "kolo")}>
-              <div className="ask-bubble">{m.text}</div>
+              <div className="ask-bubble">{rich(m.text)}</div>
               {m.assume && (
                 <div className="ask-assume">{m.assume}</div>
               )}

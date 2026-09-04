@@ -105,9 +105,9 @@ export function KoloProvider({
       // keep my public directory card in sync (name, reliability, verification)
       try {
         const rel = myReliability(d.circles, d.userId);
-        const score = d.profile.reliabilityScore
-          ? Math.round((d.profile.reliabilityScore + rel.score) / 2)
-          : rel.score;
+        // unrated members publish 0, not a flattering default — organisers
+        // must see "no history" as no history.
+        const score = rel.rated ? (rel.score as number) : 0;
         const sig = JSON.stringify([
           d.profile.name,
           score,

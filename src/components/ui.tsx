@@ -230,30 +230,41 @@ export function Pill({
 }
 
 /* ---------- reliability ring ---------- */
-export function Ring({ score }: { score: number }) {
+export function Ring({ score }: { score: number | null }) {
   const r = 33;
   const circ = 2 * Math.PI * r;
-  const off = circ * (1 - Math.max(0, Math.min(100, score)) / 100);
-  const col =
-    score >= 95 ? "var(--pos)" : score >= 85 ? "var(--warn)" : "var(--neg)";
+  const rated = typeof score === "number";
+  const off = circ * (1 - Math.max(0, Math.min(100, score ?? 0)) / 100);
+  const col = !rated
+    ? "var(--mut)"
+    : score! >= 95
+    ? "var(--pos)"
+    : score! >= 85
+    ? "var(--warn)"
+    : "var(--neg)";
   return (
     <div className="ring">
       <svg width="82" height="82" viewBox="0 0 82 82">
         <circle cx="41" cy="41" r={r} fill="none" stroke="var(--line)" strokeWidth="7" />
-        <circle
-          cx="41"
-          cy="41"
-          r={r}
-          fill="none"
-          stroke={col}
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeDasharray={circ}
-          strokeDashoffset={off}
-        />
+        {rated && (
+          <circle
+            cx="41"
+            cy="41"
+            r={r}
+            fill="none"
+            stroke={col}
+            strokeWidth="7"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={off}
+          />
+        )}
       </svg>
-      <div className="val" style={{ color: col }}>
-        {score}
+      <div
+        className="val"
+        style={{ color: col, fontSize: rated ? undefined : 13 }}
+      >
+        {rated ? score : "New"}
       </div>
     </div>
   );

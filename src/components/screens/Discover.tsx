@@ -15,7 +15,9 @@ export function Discover() {
   const d = data!;
   const sheet = useSheet();
   const rel = myReliability(d.circles, d.userId);
-  const myScore = Math.max(rel.total ? rel.score : 100, d.profile.reliabilityScore || 0);
+  const myScore = rel.score; // number when rated, null when unrated
+  const passes = (floor: number) =>
+    floor === 0 || (rel.rated && (myScore as number) >= floor);
 
   const [cat, setCat] = useState("All");
   const [real, setReal] = useState<DiscoverCircle[]>([]);
@@ -36,7 +38,7 @@ export function Discover() {
   const all = [...real, ...seeds].filter(
     (c) => cat === "All" || c.category === cat
   );
-  const qualifyCount = all.filter((c) => myScore >= c.reliabilityFloor).length;
+  const qualifyCount = all.filter((c) => passes(c.reliabilityFloor)).length;
 
   return (
     <div className="pad">
@@ -49,8 +51,19 @@ export function Discover() {
 
       <div className="eligible">
         <div className="big">Your reliability opens doors</div>
-        At <b>{myScore}%</b> you qualify for <b>{qualifyCount} of {all.length}</b> open circles here
-        — including higher-value and stranger circles. Miss a contribution and that number drops.
+        {rel.rated ? (
+          <>
+            At <b>{myScore}%</b> you qualify for <b>{qualifyCount} of {all.length}</b> open circles
+            here — including higher-value and stranger circles. Miss a contribution and that number
+            drops.
+          </>
+        ) : (
+          <>
+            You&apos;re <b>unrated</b> — you can join circles with no reliability floor and build a
+            score by completing your first cycle. Organisers see new members as unproven, which is
+            exactly right.
+          </>
+        )}
       </div>
 
       <div className="filter-row" style={{ marginTop: 14 }}>
@@ -62,7 +75,7 @@ export function Discover() {
       </div>
 
       {all.map((c) => {
-        const qualifies = myScore >= c.reliabilityFloor;
+        const qualifies = passes(c.reliabilityFloor);
         const spots = Math.max(0, c.maxSize - c.memberCount);
         const joinable = qualifies && spots > 0 && !c.pending;
         return (
@@ -70,7 +83,9 @@ export function Discover() {
             key={c.id}
             className={"pc" + (qualifies ? "" : " locked")}
             onClick={() =>
-              sheet.open(<JoinRequestSheet circle={c} qualifies={qualifies} myScore={myScore} />)
+              sheet.open(
+                <JoinRequestSheet circle={c} qualifies={qualifies} myScore={myScore ?? 0} />
+              )
             }
           >
             <div className="pc-top">

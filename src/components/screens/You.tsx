@@ -24,7 +24,6 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
   const d = data!;
   const sheet = useSheet();
   const rel = myReliability(d.circles, d.userId);
-  const score = Math.max(rel.total ? rel.score : 100, d.profile.reliabilityScore || 0);
   const done = cyclesCompletedByUser(d.circles, d.userId);
   const roll = monthlyRollups(d);
   const p = d.profile;
@@ -50,13 +49,18 @@ export function You({ goTo }: { goTo: (t: any) => void }) {
 
       <div className="card">
         <div className="ring-wrap">
-          <Ring score={score} />
+          <Ring score={rel.score} />
           <div className="txt">
             <div className="big">Your reliability</div>
             <div className="small">
-              {done} cycle{done === 1 ? "" : "s"} completed across {d.circles.length} circle
-              {d.circles.length === 1 ? "" : "s"} · {rel.total - rel.onTime} late/missed. Portable to
-              any circle you request.
+              {rel.rated
+                ? done +
+                  " cycle" +
+                  (done === 1 ? "" : "s") +
+                  " completed · " +
+                  (rel.total - rel.onTime) +
+                  " late or missed. Portable to any circle you request."
+                : "No completed cycles yet. Your score appears once you finish your first contribution cycle — until then you show as unrated to organisers."}
             </div>
           </div>
         </div>
