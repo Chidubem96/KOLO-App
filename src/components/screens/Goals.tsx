@@ -1,7 +1,7 @@
 "use client";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
-import { goalRunRate, monthlyAccrual } from "@/lib/engine";
+import { goalRunRate, hasContribHistory, monthlyAccrual } from "@/lib/engine";
 import { addMonths, clamp, D, fmt, fmtMonthY, sum } from "@/lib/format";
 import { GoalSheet } from "../sheets/GoalSheet";
 import { GoalDetail } from "../sheets/GoalDetail";
@@ -44,13 +44,19 @@ export function Goals({ embedded }: { embedded?: boolean }) {
         const acc = monthlyAccrual(g);
         const pct = clamp((g.saved / g.target) * 100, 0, 100);
         const runRate = goalRunRate(g);
+        const tracked = hasContribHistory(g);
+        // No real contribution history yet -> runRate just mirrors the
+        // required accrual, so the honest landing date IS the deadline,
+        // not a re-derived whole-months projection (which overshoots it).
         const projected =
-          runRate > 0 && g.saved < g.target
+          g.saved >= g.target
+            ? null
+            : tracked && runRate > 0
             ? addMonths(
                 new Date(),
                 Math.min(600, Math.ceil((g.target - g.saved) / runRate))
               )
-            : null;
+            : D(g.deadline);
         const onTrack = projected
           ? D(projected) <= D(g.deadline)
           : g.saved >= g.target;
@@ -103,9 +109,11 @@ export function Goals({ embedded }: { embedded?: boolean }) {
             <p className="hint" style={{ marginTop: 6 }}>
               {g.paused
                 ? "Accrual paused — not in Safe-to-Spend."
-                : projected
+                : !projected
+                ? "Reserving " + fmt(acc) + "/mo"
+                : tracked
                 ? "At " + fmt(runRate) + "/mo → lands " + fmtMonthY(projected)
-                : "Reserving " + fmt(acc) + "/mo"}
+                : "Reserving " + fmt(acc) + "/mo → on track for " + fmtMonthY(projected)}
             </p>
           </button>
         );

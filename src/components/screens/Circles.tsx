@@ -102,16 +102,31 @@ export function Circles() {
             {err}
           </p>
         )}
-        {peek && (
-          <div style={{ marginTop: 10 }}>
-            <p className="hint">
-              <b style={{ color: "var(--ink)" }}>{peek.name}</b> · {fmt(Number(peek.amount))}/
-              {peek.cadence} · {peek.members} member{peek.members === 1 ? "" : "s"}
-            </p>
-            <button className="btn full" disabled={busy} onClick={doJoin}>
-              {busy ? "Joining…" : "Join this circle"}
-            </button>
-          </div>
+        {peek && (() => {
+          const already = d.circles.find(
+            (c) => c.code === code.trim().toUpperCase()
+          );
+          return (
+            <div style={{ marginTop: 10 }}>
+              <p className="hint">
+                <b style={{ color: "var(--ink)" }}>{peek.name}</b> · {fmt(Number(peek.amount))}/
+                {peek.cadence} · {peek.members} member{peek.members === 1 ? "" : "s"}
+              </p>
+              {already ? (
+                <button
+                  className="btn ghost full"
+                  onClick={() => sheet.open(<CircleDetail circleId={already.id} />)}
+                >
+                  You&apos;re already in this circle — open it
+                </button>
+              ) : (
+                <button className="btn full" disabled={busy} onClick={doJoin}>
+                  {busy ? "Joining…" : "Join this circle"}
+                </button>
+              )}
+            </div>
+          );
+        })()}
         )}
       </div>
 
@@ -161,7 +176,13 @@ export function Circles() {
                 {paidCount}/{c.members.length} paid
               </span>
               <span className={"chip " + (st.paid ? "paid" : st.late ? "missed" : "due")}>
-                {st.paid ? "you paid" : st.late ? "you're late" : "your turn " + fmtDate(due)}
+                {st.paid
+                  ? "you paid"
+                  : st.late
+                  ? "you're late"
+                  : (c.type === "purpose" || c.type === "target"
+                      ? "your contribution due "
+                      : "your turn ") + fmtDate(due)}
               </span>
               {openDisputes > 0 && <span className="chip missed">{openDisputes} dispute</span>}
               {pendingReqs > 0 && <span className="chip due">{pendingReqs} to review</span>}

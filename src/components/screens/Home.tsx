@@ -35,7 +35,12 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
     {
       key: "oblig",
       label: "Bills & obligations",
-      sub: "due before " + fmtDate(r.horizon),
+      sub:
+        "due before " +
+        fmtDate(r.horizon) +
+        (r.obligUpcoming.length
+          ? " · " + r.obligUpcoming.length + " more just after"
+          : ""),
       val: r.obligTotal,
       items: r.obligItems,
     },
@@ -130,6 +135,16 @@ export function Home({ goTo }: { goTo: (t: any) => void }) {
                     <span>Nothing in this bucket right now.</span>
                   </div>
                 )}
+                {row.key === "oblig" &&
+                  r.obligUpcoming.length > 0 &&
+                  r.obligUpcoming.map((it, i) => (
+                    <div key={"up" + i} className="brk-line" style={{ opacity: 0.55 }}>
+                      <span>
+                        {it.label} · due {fmtDate(it.due)} — after this period
+                      </span>
+                      <span className="mono">{fmt(it.amount)}</span>
+                    </div>
+                  ))}
               </div>
             )}
           </div>

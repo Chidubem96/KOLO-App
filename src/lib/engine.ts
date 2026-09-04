@@ -92,8 +92,9 @@ export function parseAlerts(text: string): RawDraft[] {
   const out: RawDraft[] = [];
   for (const b of blocks) {
     const am = b.match(
-      /(?:NGN|N|₦)\s?([\d]{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/i
+      /(?:NGN|N|₦)\s?(-)?\s?([\d]{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/i
     );
+    const isNegativeNaira = !!am?.[1];
     const fx = b.match(FX);
     // Foreign-currency alert: never coerce the number into naira. Surface it
     // so the user knows it wasn't captured, rather than storing e.g. $200 as ₦200.
@@ -109,11 +110,14 @@ export function parseAlerts(text: string): RawDraft[] {
       continue;
     }
     if (!am) continue;
-    const amount = Math.round(parseFloat(am[1].replace(/,/g, "")));
+    const amount = Math.round(parseFloat(am[2].replace(/,/g, "")));
     if (!(amount > 0)) continue;
+    // a negative naira amount (a reversal/refund alert, "NGN -8,000.00") is
+    // money coming back, not a foreign currency and not a real debit
     const isCredit =
-      /\b(credit(ed)?|\bcr\b|received|inflow|deposit|reversal)\b/i.test(b) &&
-      !/\bdebit/i.test(b);
+      isNegativeNaira ||
+      (/\b(credit(ed)?|\bcr\b|received|inflow|deposit|reversal)\b/i.test(b) &&
+        !/\bdebit/i.test(b));
     let date: string | null = null;
     const dm =
       b.match(/(\d{1,2})[-/ ]([A-Za-z]{3,}|\d{1,2})[-/ ](\d{2,4})/) ||
@@ -251,6 +255,15 @@ export function goalRunRate(g: Goal): number {
     return Math.round((sum(logged.map((x) => x.amount)) * 30) / span);
   }
   return Math.round(monthlyAccrual(g));
+}
+
+/** True once there's real logged contribution history to project from.
+    Without it, goalRunRate() just mirrors the required accrual, and
+    re-deriving a "landing date" from that (whole calendar months, ceil'd)
+    almost always overshoots the actual deadline — the deadline itself is
+    the only honest answer until real behaviour exists. */
+export function hasContribHistory(g: Goal): boolean {
+  return (g.contribLog || []).some((x) => daysAgo(x.date) <= 90);
 }
 
 /* ---------- circle math ---------- */
@@ -418,6 +431,7 @@ export interface StSResult {
   goalTotal: number;
   buffer: { value: number; basis: string; weak: boolean };
   obligItems: { label: string; amount: number; due: Date }[];
+  obligUpcoming: { label: string; amount: number; due: Date }[];
   circleItems: { label: string; amount: number; due: Date }[];
   goalItems: { label: string; amount: number }[];
   accountCount: number;
@@ -427,11 +441,17 @@ export function safeToSpend(d: KoloData): StSResult {
   const availableLiquid = sum(liquid.map((a) => a.balance));
   const horizon = nextIncomeDate(d);
 
-  const obligItems = d.obligations
+  const allOblig = d.obligations
     .filter((o) => o.active)
-    .map((o) => ({ label: o.label, amount: o.amount, due: obligationDue(o) }))
-    .filter((o) => o.due <= horizon);
+    .map((o) => ({ label: o.label, amount: o.amount, due: obligationDue(o) }));
+  const obligItems = allOblig.filter((o) => o.due <= horizon);
   const obligTotal = sum(obligItems.map((o) => o.amount));
+  // active obligations due just AFTER the horizon: not subtracted from this
+  // number (they land after the next income), but they must not read as
+  // "no obligations" — surfaced so the absence is explained, not silent
+  const obligUpcoming = allOblig
+    .filter((o) => o.due > horizon && daysBetween(todayStr(), o.due) <= 40)
+    .sort((a, b) => +a.due - +b.due);
 
   const circleItems: { label: string; amount: number; due: Date }[] = [];
   for (const c of d.circles) {
@@ -470,6 +490,7 @@ export function safeToSpend(d: KoloData): StSResult {
     goalTotal,
     buffer,
     obligItems,
+    obligUpcoming,
     circleItems,
     goalItems,
     accountCount: d.accounts.length,

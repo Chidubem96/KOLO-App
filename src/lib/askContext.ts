@@ -62,6 +62,14 @@ export function buildAskContext(d: KoloData, question?: string) {
       category: catLabel(o.category),
     }));
 
+  // active obligations due after the horizon: real commitments, but NOT
+  // subtracted from safe_to_spend because they land after the next income
+  const obligations_after_horizon = r.obligUpcoming.map((o) => ({
+    label: o.label,
+    amount: o.amount,
+    due: fmtDateY(o.due),
+  }));
+
   const fmtSigned = (n: number) =>
     (n < 0 ? "−₦" : "₦") + Math.abs(Math.round(n)).toLocaleString("en-NG");
   const fmtPos = (n: number) =>
@@ -111,6 +119,7 @@ export function buildAskContext(d: KoloData, question?: string) {
     goals,
     circles,
     obligations,
+    obligations_after_horizon,
     spending_by_category,
     spending_window_days: 30,
     reliability_score: rel.score,

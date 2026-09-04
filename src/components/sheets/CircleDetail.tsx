@@ -101,20 +101,27 @@ export function CircleDetail({ circleId }: { circleId: string }) {
       <div className="metric-strip">
         <div>
           <div className="mv">{fmt(c.amount)}</div>
-          <div className="ml">per {c.cadence}</div>
+          <div className="ml">
+            {c.type === "purpose" ? "one-off" : "per " + (c.cadence === "weekly" ? "week" : "month")}
+          </div>
         </div>
         <div>
           <div className="mv">{fmt(pot)}</div>
-          <div className="ml">pot (recorded)</div>
+          <div className="ml">{c.type === "purpose" ? "collected" : "pot (recorded)"}</div>
         </div>
-        <div>
-          <div className="mv">#{me ? me.slot : "—"}</div>
-          <div className="ml">your slot</div>
-        </div>
+        {c.type !== "purpose" && c.type !== "target" && (
+          <div>
+            <div className="mv">#{me ? me.slot : "—"}</div>
+            <div className="ml">your slot</div>
+          </div>
+        )}
       </div>
 
       <p className="kicker" style={{ margin: "2px 0 12px" }}>
-        Cycle {cur + 1} · due {fmtDateY(due)} · code {c.code}
+        {c.type === "purpose"
+          ? "One-off collection · closes " + fmtDateY(due)
+          : "Cycle " + (cur + 1) + " · due " + fmtDateY(due)}{" "}
+        · code {c.code}
       </p>
 
       {isOrganiser && pendingReqs.length > 0 && (
@@ -522,18 +529,18 @@ export function CircleDetail({ circleId }: { circleId: string }) {
         const sole = c.members.length <= 1;
         const canDelete = sole || isOrganiser;
         const label = canDelete ? "Delete circle" : "Leave circle";
-        const armedLabel = canDelete
+        const confirmText = canDelete
           ? sole
-            ? "Tap again to delete this circle"
-            : "Tap again to delete for all " + c.members.length + " members"
-          : "Tap again to leave " + c.name;
+            ? "Delete this circle? It has no other members. This can't be undone."
+            : "Delete this circle for all " +
+              c.members.length +
+              " members? This can't be undone."
+          : "Leave " + c.name + "?";
 
+        // A committed confirm step, not a timed re-arm: it was silently
+        // reverting before a second, slower tap landed, so nothing appeared
+        // to happen. This stays open until Cancel or the real action.
         const doExit = async () => {
-          if (!armExit) {
-            setArmExit(true);
-            setTimeout(() => setArmExit(false), 4000);
-            return;
-          }
           setExitBusy(true);
           try {
             if (canDelete) {
@@ -552,22 +559,35 @@ export function CircleDetail({ circleId }: { circleId: string }) {
           }
         };
 
-        return (
-          <>
-            <button
-              className="btn danger full"
-              disabled={exitBusy}
-              onClick={doExit}
-            >
-              {exitBusy ? "Working…" : armExit ? armedLabel : label}
+        if (!armExit)
+          return (
+            <button className="btn danger full" onClick={() => setArmExit(true)}>
+              {label}
             </button>
+          );
+
+        return (
+          <div className="warn-box red">
+            <p style={{ marginBottom: 10 }}>{confirmText}</p>
+            <div className="btnrow">
+              <button className="btn sm danger" disabled={exitBusy} onClick={doExit}>
+                {exitBusy ? "Working…" : "Yes, " + label.toLowerCase()}
+              </button>
+              <button
+                className="btn sm ghost"
+                disabled={exitBusy}
+                onClick={() => setArmExit(false)}
+              >
+                Cancel
+              </button>
+            </div>
             {isOrganiser && !sole && (
-              <p className="hint" style={{ marginTop: 8 }}>
+              <p className="hint" style={{ marginTop: 10, marginBottom: 0 }}>
                 You&apos;re the organiser — deleting removes the circle for
                 everyone. There&apos;s no partial leave.
               </p>
             )}
-          </>
+          </div>
         );
       })()}
     </Sheet>

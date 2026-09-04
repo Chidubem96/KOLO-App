@@ -6,8 +6,11 @@ import {
   myReliability,
   monthlyRollups,
   floatDecision,
+  safeToSpend,
+  hasContribHistory,
 } from "./engine";
 import { kolo, txn, circle, recentDate } from "./test-fixtures";
+import { iso, addDays, todayStr } from "./format";
 
 /* ---------------------------------------------------------------------------
    parseAlerts — the primary ingestion path. Run 03 killed it; keep it alive.
@@ -56,6 +59,14 @@ describe("parseAlerts", () => {
     expect(rows[0].amount).toBe(30000);
     expect(rows[0].note.toLowerCase()).not.toContain("ignore all");
     expect(rows[0].note.toLowerCase()).not.toContain("previous instruction");
+  });
+
+  it("treats a negative naira amount as a reversal, not foreign currency", () => {
+    const rows = parseAlerts("Txn Alert\nAmt: NGN -8,000.00\nDesc: Reversal");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].currency).toBeUndefined();
+    expect(rows[0].direction).toBe("credit");
+    expect(rows[0].amount).toBe(8000);
   });
 });
 
@@ -140,6 +151,41 @@ describe("floatDecision", () => {
       floatVotes: [fv("u1", "in"), fv("u2", "in"), fv("u3", "in")],
     });
     expect(floatDecision(c, 0).active).toBe(true);
+  });
+});
+
+/* ---------------------------------------------------------------------------
+   goal landing-date honesty: with no real contribution history, the only
+   honest "lands" date is the deadline itself — not a re-derived projection
+--------------------------------------------------------------------------- */
+describe("hasContribHistory", () => {
+  it("is false for a fresh goal with no logged contributions", () => {
+    expect(
+      hasContribHistory({
+        id: "g1",
+        name: "Trip",
+        target: 1_200_000,
+        saved: 0,
+        deadline: recentDate(-90),
+        priority: 1,
+        paused: false,
+        contribLog: [],
+      })
+    ).toBe(false);
+  });
+  it("is true once a contribution has been logged in the last 90 days", () => {
+    expect(
+      hasContribHistory({
+        id: "g1",
+        name: "Trip",
+        target: 1_200_000,
+        saved: 100_000,
+        deadline: recentDate(-90),
+        priority: 1,
+        paused: false,
+        contribLog: [{ date: recentDate(5), amount: 100_000 }],
+      })
+    ).toBe(true);
   });
 });
 

@@ -3,8 +3,9 @@ import { useState } from "react";
 import { useKolo } from "@/lib/store";
 import { useSheet } from "../sheet-context";
 import { deleteRow, updateGoal } from "@/lib/api";
-import { goalRunRate } from "@/lib/engine";
+import { goalRunRate, hasContribHistory } from "@/lib/engine";
 import {
+  D,
   addMonths,
   fmt,
   fmtMonthY,
@@ -30,10 +31,17 @@ export function GoalDetail({ goalId }: { goalId: string }) {
   const monthsLeft = Math.max(1, Math.ceil(monthsUntil(g.deadline)));
   const requiredMonthly = Math.ceil(remaining / monthsLeft);
   const runRate = goalRunRate(g);
+  const tracked = hasContribHistory(g);
+  // No real contribution history -> runRate just mirrors the required
+  // accrual; re-deriving a landing date from that overshoots the actual
+  // deadline (see Goals.tsx). The deadline is the honest answer until
+  // there's real behaviour to project from.
   const projected =
-    runRate > 0 && remaining > 0
+    remaining <= 0
+      ? null
+      : tracked && runRate > 0
       ? addMonths(new Date(), Math.min(600, Math.ceil(remaining / runRate)))
-      : null;
+      : D(g.deadline);
 
   return (
     <Sheet title={g.name} onClose={close}>
@@ -56,15 +64,19 @@ export function GoalDetail({ goalId }: { goalId: string }) {
         <b>Forecast</b>
         {g.saved >= g.target
           ? "This goal is fully funded."
-          : projected
+          : !projected
+          ? `Set a contribution rate to forecast a date. To hit ${fmtMonthY(
+              g.deadline
+            )} you'd need ${fmt(requiredMonthly)}/month.`
+          : tracked
           ? `At your recent rate of ${fmt(runRate)}/month, "${g.name}" lands ${fmtMonthY(
               projected
             )}. To hit ${fmtMonthY(g.deadline)} you'd need ${fmt(
               requiredMonthly
             )}/month.`
-          : `Set a contribution rate to forecast a date. To hit ${fmtMonthY(
-              g.deadline
-            )} you'd need ${fmt(requiredMonthly)}/month.`}
+          : `Reserving ${fmt(
+              requiredMonthly
+            )}/month keeps "${g.name}" on track for ${fmtMonthY(g.deadline)}.`}
       </div>
 
       <div style={{ display: "flex", gap: 8, margin: "12px 0" }}>
