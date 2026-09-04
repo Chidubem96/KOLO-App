@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
     const msg = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 4000,
-      output_config: { effort: "low" },
+      // planning answers need a few reasoning steps; quick ones still return fast
+      output_config: { effort: "medium" },
       messages: [
         {
           role: "user",

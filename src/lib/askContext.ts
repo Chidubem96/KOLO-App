@@ -6,10 +6,16 @@ import {
   myReliability,
   safeToSpend,
 } from "./engine";
+import {
+  budgetFrame,
+  discretionaryByCategory,
+  parsePlanRequest,
+  planForTarget,
+} from "./planner";
 import { fmtDateY, fmtMonthY, iso, monthsUntil, todayStr } from "./format";
 import type { KoloData } from "./types";
 
-export function buildAskContext(d: KoloData) {
+export function buildAskContext(d: KoloData, question?: string) {
   const r = safeToSpend(d);
   const roll = monthlyRollups(d);
   const rel = myReliability(d.circles, d.userId);
@@ -69,12 +75,20 @@ export function buildAskContext(d: KoloData) {
     goals,
     circles,
     reliability_score: rel.total ? rel.score : null,
+    budget_frame: budgetFrame(d),
+    discretionary_by_category: discretionaryByCategory(d).slice(0, 6),
     assumptions: {
       salary_lands_on_day: d.profile.salaryDay,
       rent_monthly: d.profile.rent,
       income_pattern: d.profile.incomeType,
     },
-  };
+  } as Record<string, unknown>;
+
+  if (question) {
+    const { target, months } = parsePlanRequest(question);
+    const plan = planForTarget(d, target, months);
+    if (plan) ctx.planning_request = plan;
+  }
 
   const roundDeep = (v: any): any => {
     if (typeof v === "number" && Number.isFinite(v))

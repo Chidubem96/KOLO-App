@@ -14,7 +14,8 @@ interface Msg {
 
 const SUGGESTIONS = [
   "Why is my safe-to-spend where it is?",
-  "Can I afford ₦380,000 for a generator this month?",
+  "How do I save ₦1,200,000 for a vacation by December?",
+  "Build me a monthly budget from my income",
   "Am I on track for my goals?",
   "I wan buy fridge for ₦250k. E fit work?",
 ];
@@ -34,7 +35,7 @@ export function Ask() {
   const ask = async (q: string) => {
     setMsgs((m) => [...m, { role: "user", text: q }]);
     setBusy(true);
-    const ctx = buildAskContext(d);
+    const ctx = buildAskContext(d, q);
     const assume = assumeLine(ctx);
     try {
       const res = await fetch("/api/adviser", {
